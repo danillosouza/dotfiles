@@ -1,0 +1,230 @@
+#!/bin/zsh
+
+RED='\033[1;31m'
+GREEN='\033[1;32m'
+ORANGE='\033[1;33m'
+NC='\033[0m'
+
+usage()
+{
+    echo -e "${GREEN}[${ORANGE}?${GREEN}]${NC} Usage: $0 <PROJECT> [MODE]\n"
+    echo -e "\tPROJECT\t- Project name"
+    echo -e "\tMODE\t- Create the project with the flags for one of the available modes:"
+    echo -e "\t\t\tcurses"
+    echo -e "\t\t\tsdl"
+    echo -e "\n\n"
+    exit 1
+}
+
+duplicated()
+{
+    echo -e "${GREEN}[${RED}x${GREEN}]${NC} Directory already exists.\n"
+    exit 1
+}
+
+# print header
+echo $GREEN
+figlet "FactorC"
+echo "C project scaffold generator v0.3.1"
+echo $NC
+
+# get project parameters
+P_NAME=$1
+P_MODE=$2
+if [ -z "$P_NAME" ]; then
+    usage
+fi
+
+# building project mode
+P_LIB=""
+P_INC="#include <stdlib.h>"
+P_CODE="puts(\"Hello World!\");"
+P_STDIO="true"
+
+tabs 4
+
+### CURSES
+if [[ $P_MODE == "curses" ]]; then
+    P_STDIO="false"
+    P_LIB="${P_LIB} -lncurses"
+    P_INC=`echo -e "${P_INC}\n#include <ncurses.h>"`
+    read -r -d '' P_CODE << EOD
+    initscr();
+    
+    printw("Hello World!");
+    refresh();
+    
+    getch();
+    endwin();
+EOD
+
+### SDL
+elif [[ $P_MODE == "sdl" ]]; then
+    P_STDIO="false"
+    P_LIB="${P_LIB} -lSDL2"
+    P_INC=`echo -e "${P_INC}\n#include <SDL2/SDL.h>"`
+    read -r -d '' P_CODE << EOD
+    const int SCREEN_W = 1280;
+    const int SCREEN_H = 720;
+
+    SDL_Window *window = NULL;
+    SDL_Renderer *renderer = NULL;
+    SDL_Event event;
+    SDL_Rect rect;
+
+    int running = 1;
+    int fullscreen = 0;
+    const Uint8 *keystates = SDL_GetKeyboardState(NULL);
+
+    // initialize sdl components
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        printf("SDL could not initialize! Error: %s", SDL_GetError());
+        exit(1);
+    }
+
+    // create screen and renderer
+    if (SDL_CreateWindowAndRenderer(SCREEN_W, SCREEN_H, SDL_WINDOW_SHOWN, &window, &renderer) < 0) {
+        printf("Renderer could not be created! Error: %s", SDL_GetError());
+        exit(1);
+    }
+
+    SDL_SetWindowTitle(window, "${P_NAME}");
+    SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+
+    // set square measurements
+    rect.x = rect.y = 50;
+    rect.w = rect.h = 50;
+
+    // main loop
+    unsigned int loop_start, loop_end, delta;
+    while (running) {
+        // keeps the screen at 60fps
+        loop_start = SDL_GetTicks();
+        delta      = loop_start - loop_end;
+        if (delta <= 1000/60.0) continue;
+
+        // handling events
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) running = 0;
+        }
+
+        // handling keyboard events
+        if (keystates[SDL_SCANCODE_ESCAPE]) running = 0;
+        if (keystates[SDL_SCANCODE_F11])    fullscreen = !fullscreen;
+
+        if (keystates[SDL_SCANCODE_RIGHT]) rect.x += 10;
+        if (keystates[SDL_SCANCODE_LEFT])  rect.x -= 10;
+        if (keystates[SDL_SCANCODE_DOWN])  rect.y += 10;
+        if (keystates[SDL_SCANCODE_UP])    rect.y -= 10;
+
+        // check boundaries
+        if (rect.x < 0) rect.x = 0;
+        if (rect.x > (SCREEN_W - rect.w)) rect.x = (SCREEN_W - rect.w);
+        if (rect.y < 0) rect.y = 0;
+        if (rect.y > (SCREEN_H - rect.h)) rect.y = (SCREEN_H - rect.h);
+
+        // clear renderer with background color
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
+
+        // update window state if needed
+        if (fullscreen) SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
+        else SDL_SetWindowFullscreen(window, 0);
+
+        // draws the blue square
+        SDL_SetRenderDrawColor(renderer, 40, 43, 200, 255);
+        SDL_RenderFillRect(renderer, &rect);
+
+        // draws a single pink pixel on the center of the screen
+        SDL_SetRenderDrawColor(renderer, 156, 0, 156, 255);
+        SDL_RenderDrawPoint(renderer, (SCREEN_W / 2), (SCREEN_H / 2));
+        
+        // update window with content
+        SDL_RenderPresent(renderer);
+
+        // keeping track of elapsed time
+        loop_end = SDL_GetTicks();
+    }
+
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+EOD
+fi
+
+[[ "$P_STDIO" == "true" ]] && P_INC=`echo -e "${P_INC}\n#include <stdio.h>"`
+
+# header
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Project: $P_NAME"
+
+# creating project directory structure
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Creating directory structure..."
+[ -d "$P_NAME" ] && duplicated
+mkdir -p $P_NAME/src $P_NAME/lib $P_NAME/inc $P_NAME/obj $P_NAME/bin
+
+# Makefile
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Generating makefile"
+cat >> $P_NAME/Makefile <<EOT
+SDIR = ./src
+ODIR = ./obj
+LDIR = ./lib
+IDIR = ./inc
+BDIR = ./bin
+
+BNAME = main
+
+CC = gcc
+CFLAGS = -I\$(IDIR)${P_LIB}
+
+DEPS = \$(wildcard \$(IDIR)/*.h)
+SOURCES = \$(wildcard \$(SDIR)/*.c)
+OBJECTS = \$(patsubst \$(SDIR)/%.c, \$(ODIR)/%.o, \$(SOURCES))
+
+\$(BDIR)/\$(BNAME): \$(OBJECTS)
+	\$(CC) -g -o \$@ \$^ \$(CFLAGS)
+
+\$(ODIR)/%.o: \$(SDIR)/%.c \$(DEPS)
+	\$(CC) -g -c -o \$@ \$< \$(CFLAGS)
+
+.PHONY: clean
+.SILENT: run clean
+
+clean:
+	rm -f \$(ODIR)/*.o *~ core \$(INCDIR)/*~ \$(BDIR)/*
+
+run:
+	chmod +x \$(BDIR)/\$(BNAME) && \$(BDIR)/\$(BNAME)
+EOT
+
+
+# README file
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Generate README file"
+cat >> $P_NAME/README.md <<EOT
+# README
+
+Demo readme file for project documentation.
+EOT
+
+
+# gitignore file
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Generating .gitignore"
+cat >> $P_NAME/.gitignore <<EOT
+build/
+obj/
+EOT
+
+
+# main source file
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Generating placeholder code"
+cat >> $P_NAME/src/main.c <<EOT
+${P_INC}
+
+int main(int argc, char** argv)
+{
+    ${P_CODE}
+
+    return 0;
+}
+EOT
+
+echo -e "${GREEN}[${ORANGE}!${GREEN}]${NC} All done :)\n"

@@ -1,0 +1,116 @@
+#!/bin/zsh
+
+RED='\033[1;31m'
+GREEN='\033[1;32m'
+ORANGE='\033[1;33m'
+NC='\033[0m'
+
+usage()
+{
+    echo -e "${GREEN}[${ORANGE}?${GREEN}]${NC} Usage: $0 <PROJECT>\n"
+    exit 1
+}
+
+duplicated()
+{
+    echo -e "${GREEN}[${RED}x${GREEN}]${NC} Directory already exists.\n"
+    exit 1
+}
+
+# print header
+echo $GREEN
+figlet "FactorPy"
+echo "Python project scaffold generator v0.1"
+echo $NC
+
+# get project name
+P_NAME=$1
+[ -z "$P_NAME" ] && usage
+
+# header
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Project: $P_NAME"
+
+# creating project directory structure
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Creating directory structure..."
+[ -d "$P_NAME" ] && duplicated
+mkdir -p $P_NAME/core
+
+# Creating virtual environment
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Creating virtual environment..."
+python3 -m venv $P_NAME/env 2> /dev/null
+
+[ -d $P_NAME/env ] || echo "${GREEN}[${RED}!${GREEN}]${NC} Failed to create virtual environment..."
+
+# README file
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Generate README file"
+cat >> $P_NAME/README.md <<EOT
+# README
+
+Demo readme file for project documentation.
+EOT
+
+
+# gitignore file
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Generating .gitignore"
+cat >> $P_NAME/.gitignore <<EOT
+env/
+__pycache__/
+*.pyc
+*.py[cod]
+*$py.class
+EOT
+
+
+# main source file
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Generating placeholder code for main script"
+cat >> $P_NAME/$P_NAME <<EOT
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from core import Demo, app_config
+
+if __name__ == '__main__':
+    Demo().hello_world()
+EOT
+chmod +x $P_NAME/$P_NAME
+
+# runner invoking virtual environment python version
+if [[ -d $P_NAME/env ]]; then
+    cat >> $P_NAME/run <<EOT
+#!/bin/sh
+
+BASEDIR=\$(dirname "\$0")
+\$BASEDIR/env/bin/python \$BASEDIR/$P_NAME
+EOT
+    chmod +x $P_NAME/run
+fi
+
+
+# demo lib file
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Generating placeholder code for demo module"
+cat >> $P_NAME/core/demo.py <<EOT
+
+class Demo:
+    @staticmethod
+    def hello_world():
+        print("Hello World!")
+
+EOT
+
+# demo lib module
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Generating placeholder code for demo module"
+cat >> $P_NAME/core/__init__.py <<EOT
+from core.demo import Demo
+
+app_config = {
+    'name': '$P_NAME',
+    'version': '0.1',
+    'author': {
+        'name': '$USER',
+        'email': '$USER@$HOST'
+    }
+}
+EOT
+
+
+# finished!
+echo -e "${GREEN}[${ORANGE}!${GREEN}]${NC} All done :)\n"
