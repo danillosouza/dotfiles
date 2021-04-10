@@ -1,0 +1,26 @@
+#!/bin/zsh
+
+selection()
+{
+    scrot --silent --quality 100 --select --freeze ~/media/images/screenshots/%Y%m%d_%H%I%M.png
+    exit 1
+}
+
+focused()
+{
+    scrot --silent --quality 100 --focused ~/media/images/screenshots/%Y%m%d_%H%I%M.png
+    exit 1
+}
+
+fulldesk()
+{
+    scrot --silent --quality 100 ~/media/images/screenshots/%Y%m%d_%H%I%M.png
+    exit 1
+}
+
+MODE=$1
+[[ "$MODE" == "selection" ]] && selection
+[[ "$MODE" == "fulldesk" ]]  && fulldesk
+[[ "$MODE" == "focused" ]]   && focused
+
+fulldesk
