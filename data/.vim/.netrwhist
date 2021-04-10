@@ -1,0 +1,6 @@
+let g:netrw_dirhistmax  =10
+let g:netrw_dirhistcnt =4
+let g:netrw_dirhist_4='/home/azrl/Workspace/labs/_playground/insta-bot'
+let g:netrw_dirhist_3='/home/azrl/Workspace/labs/_playground/cpp-cas/wolfram-ca/src'
+let g:netrw_dirhist_2='/home/azrl/Workspace/labs/_playground/cpp-cas/wolfram-ca'
+let g:netrw_dirhist_1='/home/azrl/Workspace/m2b/Mobi2buy/Mobi2Buy/retention_mailing_orchestrator'

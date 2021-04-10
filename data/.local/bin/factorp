@@ -1,0 +1,161 @@
+#!/bin/zsh
+
+RED='\033[1;31m'
+GREEN='\033[1;32m'
+ORANGE='\033[1;33m'
+NC='\033[0m'
+
+usage()
+{
+    echo -e "${GREEN}[${ORANGE}?${GREEN}]${NC} Usage: $0 <PROJECT>\n"
+    exit 1
+}
+
+duplicated()
+{
+    echo -e "${GREEN}[${RED}x${GREEN}]${NC} Directory already exists.\n"
+    exit 1
+}
+
+# print header
+echo $GREEN
+figlet "FactorP"
+echo "Perl project scaffold generator v0.1"
+echo $NC
+
+# get project name
+P_NAME=$1
+if [ -z "$P_NAME" ]; then
+    usage
+fi
+
+# header
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Project: $P_NAME"
+
+# creating project directory structure
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Creating directory structure..."
+[ -d "$P_NAME" ] && duplicated
+mkdir -p $P_NAME/lib $P_NAME/t $P_NAME/data $P_NAME/bin
+
+# README file
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Generate README file"
+cat >> $P_NAME/README.md <<EOT
+# README
+
+Demo readme file for project documentation.
+EOT
+
+
+# gitignore file
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Generating .gitignore"
+cat >> $P_NAME/.gitignore <<EOT
+EOT
+
+
+# main source file
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Generating placeholder code for main script"
+cat >> $P_NAME/bin/$P_NAME <<EOT
+#!/usr/bin/env perl
+use 5.32.0;
+use warnings;
+use FindBin;
+use Cwd 'abs_path';
+use local::lib;
+use lib "\$FindBin::Bin/../lib";
+
+use Data::Dumper qw/Dumper/;
+use YAML::XS 'LoadFile';
+
+use Foo;
+
+my \$approot = abs_path("\$FindBin::Bin/..");
+my \$config = LoadFile("\${approot}/data/config.yaml");
+
+Foo::hello_world();
+
+say Dumper(\$config);
+EOT
+chmod +x $P_NAME/bin/$P_NAME
+
+
+# demo lib file
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Generating placeholder code for demo module"
+cat >> $P_NAME/lib/Foo.pm <<EOT
+package Foo;
+
+use 5.32.0;
+use warnings;
+
+require Exporter;
+
+our @ISA = qw(Exporter);
+
+sub hello_world {
+  say('Hello World!');
+}
+
+93;
+EOT
+
+
+# demo lib test
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Generating placeholder test code"
+cat >> $P_NAME/t/Foo.t <<EOT
+# change 'tests => 1' to 'tests => last_test_to_print';
+use 5.32.0;
+use warnings;
+use FindBin;
+use local::lib;
+use lib "\$FindBin::Bin/../lib";
+
+use Test::More tests => 1;
+BEGIN { use_ok('Foo') };
+
+#########################
+#
+# Insert your test code below, the Test::More module is use()ed here so read
+# its man page ( perldoc Test::More ) for help writing this test script.
+EOT
+
+
+# demo config yaml file
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Generating placeholder config file"
+cat >> $P_NAME/data/config.yaml <<EOT
+---
+application:
+    name: "$P_NAME"
+    version: "0.1"
+    author:
+        name: '$USER'
+        email: '$USER@$HOST'
+EOT
+
+
+# shortcut for fast execution
+echo "${GREEN}[${ORANGE}+${GREEN}]${NC} Generating application launcher"
+cat >> $P_NAME/run <<EOT
+#!/bin/zsh
+
+perl "bin/$P_NAME"
+EOT
+chmod +x $P_NAME/run
+
+
+# shortcut for tests
+cat >> $P_NAME/run-tests <<EOT
+#!/bin/zsh
+
+GREEN='\\033[1;32m'
+ORANGE='\\033[1;33m'
+NC='\\033[0m'
+
+for testfile in t/*; do
+    echo -e "\${GREEN}[\${ORANGE}+\${GREEN}]\${NC} testing for \${ORANGE}\$testfile\${NC}"
+    perl \$testfile
+done
+EOT
+chmod +x $P_NAME/run-tests
+
+
+# finished!
+echo -e "${GREEN}[${ORANGE}!${GREEN}]${NC} All done :)\n"
