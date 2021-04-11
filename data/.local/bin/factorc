@@ -34,6 +34,7 @@ usage()
     echo -e "\tMODE\t- Create the project with the flags for one of the available modes:"
     echo -e "\t\t\t\tcurses"
     echo -e "\t\t\t\tsdl"
+    echo -e "\t\t\t\topengl"
     echo -e "\n\tSTRUCTURE\n"
     struct_summary
     echo -e "\n"
@@ -167,6 +168,91 @@ elif [[ $P_MODE == "sdl" ]]; then
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
+EOD
+
+### OPENGL
+elif [[ $P_MODE == "opengl" ]]; then
+    P_STDIO="false"
+    P_LIB="${P_LIB} -lSDL2 -lGL"
+    P_INC=`echo -e "${P_INC}\n#include <SDL2/SDL.h>\n#include <GL/gl.h>"`
+    read -r -d '' P_CODE << EOD
+    const int SCREEN_W = 1280;
+    const int SCREEN_H = 720;
+    const int WINDOW_FLAGS = SDL_WINDOW_OPENGL;
+    const Uint8 *keystates = SDL_GetKeyboardState(NULL);
+    
+    int running = 1;
+    int fullscreen = 0;
+    float FPS = 60.0;
+
+    SDL_Window *window = NULL;
+    SDL_Event event;
+
+    // initialize sdl components
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        printf("SDL could not initialize! Error: %s", SDL_GetError());
+        exit(1);
+    }
+
+    // create screen
+    window = SDL_CreateWindow(
+        "${P_NAME}",
+        SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED,
+        SCREEN_W,
+        SCREEN_H,
+        WINDOW_FLAGS);
+
+    if (window == NULL) {
+        printf("Window could not be created! Error: %s", SDL_GetError());
+        exit(1);
+    }
+
+    // create opengl context and attach it to the window
+    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+
+    // main loop
+    unsigned int loop_start, loop_end, delta;
+    while (running) {
+        // keeps the screen at 60fps
+        loop_start = SDL_GetTicks();
+        delta      = loop_start - loop_end;
+        if (delta <= 1000 / FPS) continue;
+
+        // handling events
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) running = 0;
+        }
+
+        // handling keyboard events
+        if (keystates[SDL_SCANCODE_ESCAPE]) running = 0;
+        if (keystates[SDL_SCANCODE_F11])    fullscreen = !fullscreen;
+
+        // update window state if needed
+        if (fullscreen) SDL_SetWindowFullscreen(window, WINDOW_FLAGS | SDL_WINDOW_FULLSCREEN_DESKTOP);
+        else SDL_SetWindowFullscreen(window, WINDOW_FLAGS);
+
+        // clear gl context
+        glViewport(0, 0, SCREEN_W, SCREEN_H);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        // draws rectangle
+        glColor3f(0.0f, 0.0f, 0.666f);
+        glRectf(-0.05f, 0.09f, 0.05f, -0.09f);
+
+        // updating the screen
+        SDL_GL_SwapWindow(window);
+
+        // keeping track of elapsed time
+        loop_end = SDL_GetTicks();
+    }
+
+    puts(glGetString(GL_VERSION));
+
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+
 EOD
 fi
 
