@@ -1,0 +1,22 @@
+#!/bin/zsh
+
+notify_volume()
+{
+    notify-send "Volume" $(pactl list sinks | grep "^[[:space:]]Volume:" | sed -n 's/%.*$/%/p' | sed -n 's/^.*\/ //p' )
+}
+
+volume_up()
+{
+    pactl -- set-sink-volume 0 +5%
+}
+
+volume_down()
+{
+    pactl -- set-sink-volume 0 -5%
+}
+
+ACTION=$1
+[[ "$ACTION" == "up" ]]   && volume_up
+[[ "$ACTION" == "down" ]] && volume_down
+[[ "$ACTION" == "show" ]] && notify_volume
+

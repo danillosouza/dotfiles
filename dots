@@ -43,6 +43,7 @@ pack()
     cp -f $HOME/.local/bin/factorpy $DOTSDIR/.local/bin/factorpy && echo "${EPREFIX} factorpy"
     cp -f $HOME/.local/bin/multimon.sh $DOTSDIR/.local/bin/multimon.sh && echo "${EPREFIX} multimon.sh"
     cp -f $HOME/.local/bin/sshot $DOTSDIR/.local/bin/sshot && echo "${EPREFIX} sshot"
+    cp -f $HOME/.local/bin/soundsh $DOTSDIR/.local/bin/soundsh && echo "${EPREFIX} soundsh"
 
     echo -e "\n${GREEN}All done ;)${NC}\n"
     exit 0
@@ -72,7 +73,8 @@ unpack()
     [[ -f $DOTSDIR/.local/bin/factorp ]] && cp -f $DOTSDIR/.local/bin/factorp $HOME/.local/bin/factorp && echo "${EPREFIX} factorp"
     [[ -f $DOTSDIR/.local/bin/factorpy ]] && cp -f $DOTSDIR/.local/bin/factorpy $HOME/.local/bin/factorpy && echo "${EPREFIX} factorpy"
     [[ -f $DOTSDIR/.local/bin/multimon.sh ]] && cp -f $DOTSDIR/.local/bin/multimon.sh $HOME/.local/bin/multimon.sh && echo "${EPREFIX} multimon.sh"
-    [[ -f $DOTSDIR/.local/bin/sshot ]] && cp -f $DOTSDIR/.local/bin/sshot $HOME/.local/bin/sshot && echo "${EPREFIX} multimon.sh"
+    [[ -f $DOTSDIR/.local/bin/sshot ]] && cp -f $DOTSDIR/.local/bin/sshot $HOME/.local/bin/sshot && echo "${EPREFIX} sshot"
+    [[ -f $DOTSDIR/.local/bin/soundsh ]] && cp -f $DOTSDIR/.local/bin/soundsh $HOME/.local/bin/soundsh && echo "${EPREFIX} soundsh"
 
     echo -e "\n${GREEN}All done ;)${NC}\n"
     exit 0

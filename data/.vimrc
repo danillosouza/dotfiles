@@ -7,6 +7,7 @@ filetype plugin indent on
 " Useful features
 """"""""""""""""""""""""""""""""""""
 set nocompatible
+set nowrap
 
 " attempts to determine file type and indentation
 if has('filetype')
