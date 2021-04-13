@@ -14,6 +14,8 @@ usage()
     echo -e "${GREEN}[${ORANGE}?${GREEN}]${NC} Usage: $0 <action>\n"
     echo -e "\tpack\t- Save system dotfiles to repository"
     echo -e "\tunpack\t- Unpack repository dotfiles to the system"
+    echo -e "\tpacsav\t- Save list of installed packages"
+    echo -e "\tpacload\t- Install packages from saved list"
     echo -e "\n\n"
     exit 1
 }
@@ -80,6 +82,38 @@ unpack()
     exit 0
 }
 
+#
+# Pacsav
+#
+pacsav()
+{
+    echo -e "${RED}--- FREEZING PACKAGES ---${NC}\n"
+    pacman -Qqe > $DOTSDIR/pkglist.txt
+
+    echo -e "\n${GREEN}All done ;)${NC}\n"
+    exit 0
+}
+
+#
+# Pacload
+#
+pacload()
+{
+    echo -e "${RED}--- INSTALLING PACKAGES ---${NC}\n"
+
+    if [[ -f "${DOTSDIR}/pkglist.txt" ]]; then
+        pacman -S --needed - < $DOTSDIR/pkglist.txt
+        echo -e "\n${GREEN}All done ;)${NC}\n"
+    else
+        echo -e "${RED}Nothing to be done...${NC}\n"
+        echo -e "\n${GREEN}All done ;)${NC}\n"
+    fi
+
+    exit 0
+}
+
+
+#
 # print header
 echo $GREEN
 figlet "DotS"
@@ -93,8 +127,10 @@ if [ -z "$ACTION" ]; then
 fi
 
 # perform action
-[[ $ACTION == "pack" ]] && pack
-[[ $ACTION == "unpack" ]] && unpack
+[[ $ACTION == "pack" ]]    && pack
+[[ $ACTION == "unpack" ]]  && unpack
+[[ $ACTION == "pacsav" ]]  && pacsav
+[[ $ACTION == "pacload" ]] && pacload
 
 # default
 usage
