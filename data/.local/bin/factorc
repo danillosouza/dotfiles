@@ -31,7 +31,8 @@ usage()
 {
     echo -e "${BLUE}[${CYAN}?${BLUE}]${NC} Usage: $0 <PROJECT> [MODE]\n"
     echo -e "\tPROJECT\t- Project name"
-    echo -e "\tMODE\t- Create the project with the flags for one of the available modes:"
+    echo -e "\tMODE\t- Create bare minimum project code for one of the available modes:"
+    echo -e "\t\t\t\tgetopt"
     echo -e "\t\t\t\tcurses"
     echo -e "\t\t\t\tsdl"
     echo -e "\t\t\t\topengl"
@@ -50,7 +51,7 @@ duplicated()
 # print header
 echo $BLUE
 figlet "FactorC"
-echo "C project scaffold generator v0.4.2"
+echo "C project scaffold generator v0.4.3"
 echo $NC
 [[ -z "$P_NAME" ]] && P_DEMONAME="demo" && usage
 
@@ -68,6 +69,8 @@ if [[ $P_MODE == "curses" ]]; then
     P_LIB="${P_LIB} -lncurses"
     P_INC=`echo -e "${P_INC}\n#include <ncurses.h>"`
     read -r -d '' P_CODE << EOD
+int main(int argc, char** argv)
+{
     initscr();
     
     printw("Hello World!");
@@ -75,6 +78,8 @@ if [[ $P_MODE == "curses" ]]; then
     
     getch();
     endwin();
+    return 0;
+}
 EOD
 
 ### SDL
@@ -83,6 +88,8 @@ elif [[ $P_MODE == "sdl" ]]; then
     P_LIB="${P_LIB} -lSDL2"
     P_INC=`echo -e "${P_INC}\n#include <SDL2/SDL.h>"`
     read -r -d '' P_CODE << EOD
+int main(int argc, char** argv)
+{
     const int SCREEN_W = 1280;
     const int SCREEN_H = 720;
 
@@ -168,6 +175,8 @@ elif [[ $P_MODE == "sdl" ]]; then
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
+    return 0;
+}
 EOD
 
 ### OPENGL
@@ -176,6 +185,8 @@ elif [[ $P_MODE == "opengl" ]]; then
     P_LIB="${P_LIB} -lSDL2 -lGL"
     P_INC=`echo -e "${P_INC}\n#include <SDL2/SDL.h>\n#include <GL/gl.h>"`
     read -r -d '' P_CODE << EOD
+int main(int argc, char** argv)
+{
     const int SCREEN_W = 1280;
     const int SCREEN_H = 720;
     const int WINDOW_FLAGS = SDL_WINDOW_OPENGL;
@@ -252,7 +263,97 @@ elif [[ $P_MODE == "opengl" ]]; then
 
     SDL_DestroyWindow(window);
     SDL_Quit();
+    return 0;
+}
+EOD
 
+### GETOPT
+elif [[ $P_MODE == "getopt" ]]; then
+    P_STDIO="true"
+    P_LIB="${P_LIB}"
+    P_INC=`echo -e "${P_INC}\n#include <getopt.h>"`
+    read -r -d '' P_CODE << EOD
+void show_usage(char *bin)
+{
+    printf("$ %s <-m|-f> [-a AGE] [-n NAME] [-h HEIGHT]\n\n", bin);
+    exit(1);
+}
+
+int main(int argc, char** argv)
+{
+    int option;
+    int mflag = 0;
+    int fflag = 0;
+    int aflag = 0;
+    int hflag = 0;
+    char available_options[] = "mfn:a:h:";
+    char *charname = "Guest";
+    int age;
+    double height;
+
+    if (argc < 2) show_usage(argv[0]);
+
+    opterr = 0; // suppress default 'invalid option' message
+    while ((option = getopt(argc, argv, available_options)) != -1) {
+        switch (option)
+        {
+            case 'm':
+                if (fflag) show_usage(argv[0]);
+                mflag = 1;
+                break;
+            
+            case 'f':
+                if (mflag) show_usage(argv[0]);
+                fflag = 1;
+                break;
+            
+            case 'n':
+                if (optarg == NULL) show_usage(argv[0]);
+                charname = optarg;
+                break;
+            
+            case 'a':
+                if (optarg == NULL) show_usage(argv[0]);
+                aflag = 1;
+                age = atoi(optarg);
+                break;
+            
+            case 'h':
+                if (optarg == NULL) show_usage(argv[0]);
+                hflag = 1;
+                height = atof(optarg);
+                break;
+            
+            case '?':
+            default:
+                printf("Invalid option '-%c' was found!\n", optopt);
+                break;
+        }
+    }
+
+    if (!mflag && !fflag) show_usage(argv[0]);
+    if (mflag) printf("Male character called %s!\n", charname);
+    if (fflag) printf("Female character called %s!\n", charname);
+    if (aflag) {
+        if (age < 18) {
+            printf("You should not be playing with this!\n");
+            exit(1);
+        }
+
+        printf("You are %d years old... nice!\n", age);
+    }
+
+    if (hflag) {
+        if (height < 1.0) {
+            printf("Aren't you too small to be here?\n");
+            exit(1);
+        }
+
+        printf("You are %.2fm tall!\n", height);
+    }
+
+    return 0;
+}
 EOD
 fi
 
@@ -350,12 +451,7 @@ echo "${BLUE}[${CYAN}+${BLUE}]${NC} Creating placeholder code"
 cat >> $P_NAME/src/main.c <<EOT
 ${P_INC}
 
-int main(int argc, char** argv)
-{
-    ${P_CODE}
-
-    return 0;
-}
+${P_CODE}
 EOT
 
 echo -e "${BLUE}[${CYAN}!${BLUE}]${NC} All done :)\n"
