@@ -41,6 +41,7 @@ pack()
 
     echo -e "\n${RED}--- PACKING ${HOME}/.local/bin ---${NC}\n"
     cp -f $HOME/.local/bin/factorc $DOTSDIR/.local/bin/factorc && echo "${EPREFIX} factorc"
+    cp -f $HOME/.local/bin/factorj $DOTSDIR/.local/bin/factorj && echo "${EPREFIX} factorj"
     cp -f $HOME/.local/bin/factorp $DOTSDIR/.local/bin/factorp && echo "${EPREFIX} factorp"
     cp -f $HOME/.local/bin/factorpy $DOTSDIR/.local/bin/factorpy && echo "${EPREFIX} factorpy"
     cp -f $HOME/.local/bin/multimon.sh $DOTSDIR/.local/bin/multimon.sh && echo "${EPREFIX} multimon.sh"
@@ -72,6 +73,7 @@ unpack()
 
     echo -e "\n${RED}--- UNPACKING ${HOME}/.local/bin ---${NC}\n"
     [[ -f $DOTSDIR/.local/bin/factorc ]] && cp -f $DOTSDIR/.local/bin/factorc $HOME/.local/bin/factorc && echo "${EPREFIX} factorc"
+    [[ -f $DOTSDIR/.local/bin/factorj ]] && cp -f $DOTSDIR/.local/bin/factorj $HOME/.local/bin/factorj && echo "${EPREFIX} factorj"
     [[ -f $DOTSDIR/.local/bin/factorp ]] && cp -f $DOTSDIR/.local/bin/factorp $HOME/.local/bin/factorp && echo "${EPREFIX} factorp"
     [[ -f $DOTSDIR/.local/bin/factorpy ]] && cp -f $DOTSDIR/.local/bin/factorpy $HOME/.local/bin/factorpy && echo "${EPREFIX} factorpy"
     [[ -f $DOTSDIR/.local/bin/multimon.sh ]] && cp -f $DOTSDIR/.local/bin/multimon.sh $HOME/.local/bin/multimon.sh && echo "${EPREFIX} multimon.sh"

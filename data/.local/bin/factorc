@@ -455,5 +455,5 @@ ${P_CODE}
 EOT
 
 echo -e "${BLUE}[${CYAN}!${BLUE}]${NC} All done :)\n"
-struct_summary $P_NAME
+struct_summary
 echo -e "\n"
