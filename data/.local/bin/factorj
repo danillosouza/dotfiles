@@ -40,7 +40,7 @@ duplicated()
 # print header
 echo $BLUE
 figlet "FactorJ"
-echo "Javascript project scaffold generator v0.1"
+echo "ES6 project scaffold generator v0.1"
 echo $NC
 
 # get project name
@@ -88,8 +88,11 @@ cat >> $P_NAME/package.json <<EOT
   "author": "${USER} <${USER}@${HOST}>",
   "license": "Zlib",
   "devDependencies": {
+    "@babel/core": "^7.13.15",
+    "@babel/preset-env": "^7.13.15",
     "autoprefixer": "^9.8.6",
     "gulp": "^4.0.2",
+    "gulp-babel": "^8.0.0",
     "gulp-clean-css": "^4.3.0",
     "gulp-concat": "^2.6.1",
     "gulp-imagemin": "^7.1.0",
@@ -106,6 +109,7 @@ EOT
 echo "${BLUE}[${CYAN}+${BLUE}]${NC} Generating gulpfile.js"
 cat >> $P_NAME/gulpfile.js <<EOT
 const gulp = require('gulp');
+const babel = require('gulp-babel');
 const concat = require('gulp-concat');
 const terser = require('gulp-terser');
 const cleancss = require('gulp-clean-css');
@@ -120,22 +124,25 @@ const pathHtml = 'src/*.html';
 const pathImages = 'src/assets/img/**/*';
 
 // copy html files
-function html() {
+const html = () => {
     return src(pathHtml)
         .pipe(gulp.dest('dist'));
 }
 
 // optimize images
-function images() {
+const images = () => {
     return src(pathImages)
         .pipe(imagemin())
         .pipe(gulp.dest('dist/assets/img'));
 }
 
 // concatenate and minify javascript files
-function javascript() {
+const javascript = () => {
     return src(pathJs)
         .pipe(sourcemaps.init())
+        .pipe(babel({
+            presets: ['@babel/preset-env']
+        }))
         .pipe(concat('all.js'))
         .pipe(terser())
         .pipe(sourcemaps.write('.'))
@@ -143,7 +150,7 @@ function javascript() {
 }
 
 // concatenate and minify css files
-function css() {
+const css = () => {
     return src(pathCss)
         .pipe(sourcemaps.init())
         .pipe(concat('all.css'))
@@ -157,7 +164,7 @@ function css() {
 }
 
 // watch files for changes
-function listen() {
+const listen = () => {
     watch([pathHtml, pathCss, pathImages, pathJs], {interval: 1000}, parallel(html, css, images, javascript));
 }
 

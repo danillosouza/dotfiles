@@ -72,13 +72,13 @@ unpack()
     [[ -f $DOTSDIR/.zshrc ]] && cp -f $DOTSDIR/.zshrc $HOME/.zshrc && echo "${EPREFIX} .zshrc"
 
     echo -e "\n${RED}--- UNPACKING ${HOME}/.local/bin ---${NC}\n"
-    [[ -f $DOTSDIR/.local/bin/factorc ]] && cp -f $DOTSDIR/.local/bin/factorc $HOME/.local/bin/factorc && echo "${EPREFIX} factorc"
-    [[ -f $DOTSDIR/.local/bin/factorj ]] && cp -f $DOTSDIR/.local/bin/factorj $HOME/.local/bin/factorj && echo "${EPREFIX} factorj"
-    [[ -f $DOTSDIR/.local/bin/factorp ]] && cp -f $DOTSDIR/.local/bin/factorp $HOME/.local/bin/factorp && echo "${EPREFIX} factorp"
-    [[ -f $DOTSDIR/.local/bin/factorpy ]] && cp -f $DOTSDIR/.local/bin/factorpy $HOME/.local/bin/factorpy && echo "${EPREFIX} factorpy"
-    [[ -f $DOTSDIR/.local/bin/multimon.sh ]] && cp -f $DOTSDIR/.local/bin/multimon.sh $HOME/.local/bin/multimon.sh && echo "${EPREFIX} multimon.sh"
-    [[ -f $DOTSDIR/.local/bin/sshot ]] && cp -f $DOTSDIR/.local/bin/sshot $HOME/.local/bin/sshot && echo "${EPREFIX} sshot"
-    [[ -f $DOTSDIR/.local/bin/soundsh ]] && cp -f $DOTSDIR/.local/bin/soundsh $HOME/.local/bin/soundsh && echo "${EPREFIX} soundsh"
+    [[ -f $DOTSDIR/.local/bin/factorc ]] && cp -f $DOTSDIR/.local/bin/factorc $HOME/.local/bin/factorc && chmod +x $HOME/.local/bin/factorc && echo "${EPREFIX} factorc"
+    [[ -f $DOTSDIR/.local/bin/factorj ]] && cp -f $DOTSDIR/.local/bin/factorj $HOME/.local/bin/factorj && chmod +x $HOME/.local/bin/factorj && echo "${EPREFIX} factorj"
+    [[ -f $DOTSDIR/.local/bin/factorp ]] && cp -f $DOTSDIR/.local/bin/factorp $HOME/.local/bin/factorp && chmod +x $HOME/.local/bin/factorp && echo "${EPREFIX} factorp"
+    [[ -f $DOTSDIR/.local/bin/factorpy ]] && cp -f $DOTSDIR/.local/bin/factorpy $HOME/.local/bin/factorpy && chmod +x $HOME/.local/bin/factorpy && echo "${EPREFIX} factorpy"
+    [[ -f $DOTSDIR/.local/bin/multimon.sh ]] && cp -f $DOTSDIR/.local/bin/multimon.sh $HOME/.local/bin/multimon.sh && chmod +x $HOME/.local/bin/multimon.sh && echo "${EPREFIX} multimon.sh"
+    [[ -f $DOTSDIR/.local/bin/sshot ]] && cp -f $DOTSDIR/.local/bin/sshot $HOME/.local/bin/sshot && chmod +x $HOME/.local/bin/sshot && echo "${EPREFIX} sshot"
+    [[ -f $DOTSDIR/.local/bin/soundsh ]] && cp -f $DOTSDIR/.local/bin/soundsh $HOME/.local/bin/soundsh && chmod +x $HOME/.local/bin/soundsh && echo "${EPREFIX} soundsh"
 
     echo -e "\n${GREEN}All done ;)${NC}\n"
     exit 0
