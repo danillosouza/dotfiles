@@ -21,7 +21,7 @@ struct_summary()
     echo -e "\t├── ${BLUE}lib/${NC}"
     echo -e "\t├── ${BLUE}obj/${NC}"
     echo -e "\t├── ${BLUE}src/${NC}"
-    echo -e "\t│   └── ${P_DEMONAME}.c"
+    echo -e "\t│   └── ${P_DEMONAME}.cpp"
     echo -e "\t├── .gitignore"
     echo -e "\t├── Makefile"
     echo -e "\t└── README.md"
@@ -50,19 +50,19 @@ duplicated()
 
 # print header
 echo $BLUE
-figlet "FactorC"
-echo "C project scaffold generator v0.4.4"
+figlet "FactorC++"
+echo "C++ project scaffold generator v0.1.1"
 echo $NC
 [[ -z "$P_NAME" ]] && P_DEMONAME="demo" && usage
 
 # building project mode
 P_LIB=""
-P_INC="#include <stdlib.h>"
-P_STDIO="true"
+P_INC=""
+P_IOSTREAM="true"
 read -r -d '' P_CODE << EOD
 int main(int argc, char **argv)
 {
-    puts("Hello World!");
+    std::cout << "Hello World!" << std::endl;
     return 0;
 }
 EOD
@@ -71,11 +71,11 @@ tabs 4
 
 ### CURSES
 if [[ $P_MODE == "curses" || $P_MODE == "ncurses" ]]; then
-    P_STDIO="false"
+    P_IOSTREAM="false"
     P_LIB="${P_LIB} -lncurses"
     P_INC=`echo -e "${P_INC}\n#include <ncurses.h>"`
     read -r -d '' P_CODE << EOD
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     initscr();
     
@@ -90,11 +90,11 @@ EOD
 
 ### SDL
 elif [[ $P_MODE == "sdl" ]]; then
-    P_STDIO="false"
+    P_IOSTREAM="false"
     P_LIB="${P_LIB} -lSDL2"
     P_INC=`echo -e "${P_INC}\n#include <SDL2/SDL.h>"`
     read -r -d '' P_CODE << EOD
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     const int SCREEN_W = 1280;
     const int SCREEN_H = 720;
@@ -187,11 +187,11 @@ EOD
 
 ### OPENGL
 elif [[ $P_MODE == "opengl" ]]; then
-    P_STDIO="false"
+    P_IOSTREAM="false"
     P_LIB="${P_LIB} -lSDL2 -lGL"
     P_INC=`echo -e "${P_INC}\n#include <SDL2/SDL.h>\n#include <GL/gl.h>"`
     read -r -d '' P_CODE << EOD
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     const int SCREEN_W = 1280;
     const int SCREEN_H = 720;
@@ -275,7 +275,7 @@ EOD
 
 ### GETOPT
 elif [[ $P_MODE == "getopt" ]]; then
-    P_STDIO="true"
+    P_IOSTREAM="true"
     P_LIB="${P_LIB}"
     P_INC=`echo -e "${P_INC}\n#include <getopt.h>"`
     read -r -d '' P_CODE << EOD
@@ -363,7 +363,7 @@ int main(int argc, char** argv)
 EOD
 fi
 
-[[ "$P_STDIO" == "true" ]] && P_INC=`echo -e "${P_INC}\n#include <stdio.h>"`
+[[ "$P_IOSTREAM" == "true" ]] && P_INC=`echo -e "${P_INC}\n#include <iostream>"`
 
 # header
 echo "${BLUE}[${CYAN}+${BLUE}]${NC} Project: $P_NAME"
@@ -381,24 +381,25 @@ ODIR = ./obj
 LDIR = ./lib
 IDIR = ./inc
 BDIR = ./bin
-DDIR = ./doc
 
 BNAME = ${P_NAME}
 
-CC = gcc
+CC = g++
+CEXT = cpp
+HEXT = h
 CFLAGS = -I\$(IDIR)${P_LIB}
 
-DEPS = \$(wildcard \$(IDIR)/*.h)
-SOURCES = \$(wildcard \$(SDIR)/*.c)
-OBJECTS = \$(patsubst \$(SDIR)/%.c, \$(ODIR)/%.o, \$(SOURCES))
+DEPS = \$(wildcard \$(IDIR)/*.\$(HEXT))
+SOURCES = \$(wildcard \$(SDIR)/*.\$(CEXT))
+OBJECTS = \$(patsubst \$(SDIR)/%.\$(CEXT), \$(ODIR)/%.o, \$(SOURCES))
 
 \$(BDIR)/\$(BNAME): \$(OBJECTS)
 	\$(CC) -g -o \$@ \$^ \$(CFLAGS)
 
-\$(ODIR)/%.o: \$(SDIR)/%.c \$(DEPS)
+\$(ODIR)/%.o: \$(SDIR)/%.\$(CEXT) \$(DEPS)
 	\$(CC) -g -c -o \$@ \$< \$(CFLAGS)
 
-.PHONY: clean doc
+.PHONY: clean
 .SILENT: run clean
 
 clean:
@@ -454,7 +455,7 @@ EOT
 
 # main source file
 echo "${BLUE}[${CYAN}+${BLUE}]${NC} Creating placeholder code"
-cat >> $P_NAME/src/main.c <<EOT
+cat >> $P_NAME/src/main.cpp <<EOT
 ${P_INC}
 
 ${P_CODE}
