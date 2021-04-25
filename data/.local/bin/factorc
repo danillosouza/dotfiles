@@ -75,14 +75,36 @@ if [[ $P_MODE == "curses" || $P_MODE == "ncurses" ]]; then
     P_LIB="${P_LIB} -lncurses"
     P_INC=`echo -e "${P_INC}\n#include <ncurses.h>"`
     read -r -d '' P_CODE << EOD
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
+    int running = 1;
+    char input;
+
     initscr();
+    start_color();
+
+    // id, foreground, background
+    init_pair(1, COLOR_CYAN, COLOR_WHITE);
     
-    printw("Hello World!");
-    refresh();
+    while (running) {
+        clear();
+
+        if (input) {
+            attron(COLOR_PAIR(1));
+            mvaddch(1, 1, input);
+            attroff(COLOR_PAIR(1));
+        }
+
+        attron(A_BOLD);
+        mvprintw(5, 10, "Hello World!");
+        attroff(A_BOLD);
+        refresh();
+
+        input = getch();
+
+        if (input == 'q') running = 0;
+    }
     
-    getch();
     endwin();
     return 0;
 }

@@ -41,3 +41,5 @@ run msm_notifier
 multimon.sh
 nitrogen --restore &
 
+# do not shut off screen when idle
+xset -dpms s off
