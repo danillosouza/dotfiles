@@ -30,6 +30,7 @@ cryptsetup
 device-mapper
 dhclient
 dhcpcd
+dia
 diffutils
 dmraid
 dnsmasq
@@ -170,11 +171,14 @@ scrot
 sed
 sfml
 shadow
+snes9x
+snes9x-gtk
 sof-firmware
 spectre-meltdown-checker
 spotify
 spotify-tui
 squashfs-tools
+staruml
 steam-manjaro
 sudo
 svt-av1
@@ -228,6 +232,7 @@ xf86-video-ati
 xf86-video-intel
 xf86-video-nouveau
 xfsprogs
+xmind-2020
 xorg-server
 xorg-xbacklight
 xorg-xfontsel

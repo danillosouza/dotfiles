@@ -73,36 +73,42 @@ tabs 4
 if [[ $P_MODE == "curses" || $P_MODE == "ncurses" ]]; then
     P_IOSTREAM="false"
     P_LIB="${P_LIB} -lncurses"
-    P_INC=`echo -e "${P_INC}#include <ncurses.h>"`
+    P_INC=`echo -e "${P_INC}#include <string>\n#include <unistd.h>\n#include <ncurses.h>"`
     read -r -d '' P_CODE << EOD
 int main(int argc, char **argv)
 {
     bool running = true;
     char input;
+    int counter = 0;
+    int loop_delay = 100 * 1000; // miliseconds to microseconds
 
     initscr();
+    noecho();
     start_color();
+    curs_set(0);
 
     // id, foreground, background
     init_pair(1, COLOR_CYAN, COLOR_WHITE);
     
     while (running) {
-        clear();
-
         if (input) {
             attron(COLOR_PAIR(1));
-            mvaddch(1, 1, input);
+            mvwaddch(stdscr, 1, 1, input);
             attroff(COLOR_PAIR(1));
         }
 
         attron(A_BOLD);
-        mvprintw(5, 10, "Hello World!");
-        attroff(A_BOLD);
-        refresh();
+        mvwprintw(stdscr, 3, 10, std::to_string(counter++).c_str());
 
-        input = getch();
+        mvwprintw(stdscr, 5, 10, "Hello World!");
+        attroff(A_BOLD);
+        wrefresh(stdscr);
+
+        timeout(0);
+        input = wgetch(stdscr);
 
         if (input == 'q') running = false;
+        usleep(loop_delay);
     }
     
     endwin();
@@ -403,13 +409,16 @@ ODIR = ./obj
 LDIR = ./lib
 IDIR = ./inc
 BDIR = ./bin
+DDIR = ./doc
+FDIR = ./build
 
 BNAME = ${P_NAME}
+LNAME = lib_${P_NAME}
 
 CC = g++
 CEXT = cpp
 HEXT = h
-CFLAGS = -I\$(IDIR)${P_LIB} -Wall -std=c++11
+CFLAGS = -I\$(IDIR)${P_LIB} -L\$(LDIR) -Wall -std=c++11
 
 DEPS = \$(wildcard \$(IDIR)/*.\$(HEXT))
 SOURCES = \$(wildcard \$(SDIR)/*.\$(CEXT))
@@ -421,6 +430,8 @@ OBJECTS = \$(patsubst \$(SDIR)/%.\$(CEXT), \$(ODIR)/%.o, \$(SOURCES))
 \$(ODIR)/%.o: \$(SDIR)/%.\$(CEXT) \$(DEPS)
 	\$(CC) -g -c -o \$@ \$< \$(CFLAGS)
 
+SHAREOBS = $(filter-out $(ODIR)/main.o, $(wildcard $(ODIR)/*.o))
+
 .PHONY: clean
 .SILENT: run clean
 
@@ -430,8 +441,12 @@ clean:
 run:
 	chmod +x \$(BDIR)/\$(BNAME) && \$(BDIR)/\$(BNAME)
 
+shared:
+	@mkdir -p $(FDIR)
+	$(CC) -shared -o $(FDIR)/$(LNAME).so $(SHAREOBS)
+
 doc:
-	man \$(DDIR)/\$(BNAME)
+	@man \$(DDIR)/\$(BNAME)
 EOT
 
 
