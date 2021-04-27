@@ -413,12 +413,15 @@ DDIR = ./doc
 FDIR = ./build
 
 BNAME = ${P_NAME}
-LNAME = lib_${P_NAME}
+LIBNAME = lib${P_NAME}
 
 CC = g++
 CEXT = cpp
 HEXT = h
-CFLAGS = -I\$(IDIR)${P_LIB} -L\$(LDIR) -Wall -std=c++11
+CFLAGS = -I\$(IDIR)${P_LIB} -L\$(LDIR) -std=c++11
+CFLAGS += -Wall -Wextra -Wpedantic \
+          -Wformat=2 -Wno-unused-parameter -Wshadow \
+          -Wwrite-strings -Wredundant-decls -Wmissing-include-dirs
 
 DEPS = \$(wildcard \$(IDIR)/*.\$(HEXT))
 SOURCES = \$(wildcard \$(SDIR)/*.\$(CEXT))
@@ -430,20 +433,34 @@ OBJECTS = \$(patsubst \$(SDIR)/%.\$(CEXT), \$(ODIR)/%.o, \$(SOURCES))
 \$(ODIR)/%.o: \$(SDIR)/%.\$(CEXT) \$(DEPS)
 	\$(CC) -g -c -o \$@ \$< \$(CFLAGS)
 
-SHAREOBS = $(filter-out $(ODIR)/main.o, $(wildcard $(ODIR)/*.o))
+-include Makefile.deps
 
-.PHONY: clean
+Makefile.deps:
+	\$(CC) \$(CFLAGS) -MM \$(SOURCES) > Makefile.deps
+
+.PHONY: clean doc
 .SILENT: run clean
 
+LIBFILES := \$(filter-out main.o,\$(wildcard \$(ODIR)/*.o))
+
 clean:
+	rm Makefile.deps
+	rm -Rf dist
 	rm -f \$(ODIR)/*.o *~ core \$(INCDIR)/*~ \$(BDIR)/*
+
+statlib:
+	mkdir -p dist/static/headers
+	ar rcs dist/static/\$(LIBNAME).a \$(LIBFILES)
+	ranlib dist/static/\$(LIBNAME).a
+	cp \$(IDIR)/*.h dist/static/headers
 
 run:
 	chmod +x \$(BDIR)/\$(BNAME) && \$(BDIR)/\$(BNAME)
 
 shared:
-	@mkdir -p $(FDIR)
-	$(CC) -shared -o $(FDIR)/$(LNAME).so $(SHAREOBS)
+	mkdir -p dist/shared/headers
+	\$(CC) -shared -o dist/shared/\$(LIBNAME).so \$(LIBFILES)
+	cp \$(IDIR)/*.h dist/shared/headers
 
 doc:
 	@man \$(DDIR)/\$(BNAME)
