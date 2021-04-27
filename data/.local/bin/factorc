@@ -408,7 +408,16 @@ DDIR = ./doc
 BNAME = ${P_NAME}
 
 CC = gcc
-CFLAGS = -I\$(IDIR)${P_LIB}
+CFLAGS = -I\$(IDIR)${P_LIB} -L\$(LDIR) -std=c11
+CFLAGS += -Wall -Wextra -Wpedantic \
+          -Wformat=2 -Wno-unused-parameter -Wshadow \
+          -Wwrite-strings -Wstrict-prototypes -Wold-style-definition \
+          -Wredundant-decls -Wnested-externs -Wmissing-include-dirs
+
+# GCC warnings that Clang doesn't provide:
+ifeq (\$(CC),gcc)
+    CFLAGS += -Wjump-misses-init -Wlogical-op
+endif
 
 DEPS = \$(wildcard \$(IDIR)/*.h)
 SOURCES = \$(wildcard \$(SDIR)/*.c)
@@ -420,10 +429,16 @@ OBJECTS = \$(patsubst \$(SDIR)/%.c, \$(ODIR)/%.o, \$(SOURCES))
 \$(ODIR)/%.o: \$(SDIR)/%.c \$(DEPS)
 	\$(CC) -g -c -o \$@ \$< \$(CFLAGS)
 
+-include Makefile.deps
+
+Makefile.deps:
+	\$(CC) \$(CFLAGS) -MM \$(SOURCES) > Makefile.deps
+
 .PHONY: clean doc
 .SILENT: run clean
 
 clean:
+	rm Makefile.deps
 	rm -f \$(ODIR)/*.o *~ core \$(INCDIR)/*~ \$(BDIR)/*
 
 run:

@@ -418,7 +418,15 @@ LNAME = lib_${P_NAME}
 CC = g++
 CEXT = cpp
 HEXT = h
-CFLAGS = -I\$(IDIR)${P_LIB} -L\$(LDIR) -Wall -std=c++11
+CFLAGS = -I\$(IDIR)${P_LIB} -L\$(LDIR) -std=c++11
+CFLAGS += -Wall -Wextra -Wpedantic \
+          -Wformat=2 -Wno-unused-parameter -Wshadow \
+          -Wwrite-strings -Wredundant-decls -Wmissing-include-dirs
+
+# GCC warnings that Clang doesn't provide:
+ifeq (\$(CC),gcc)
+    CFLAGS += -Wjump-misses-init -Wlogical-op
+endif
 
 DEPS = \$(wildcard \$(IDIR)/*.\$(HEXT))
 SOURCES = \$(wildcard \$(SDIR)/*.\$(CEXT))
@@ -432,10 +440,16 @@ OBJECTS = \$(patsubst \$(SDIR)/%.\$(CEXT), \$(ODIR)/%.o, \$(SOURCES))
 
 SHAREOBS = $(filter-out $(ODIR)/main.o, $(wildcard $(ODIR)/*.o))
 
+-include Makefile.deps
+
+Makefile.deps:
+	\$(CC) \$(CFLAGS) -MM \$(SOURCES) > Makefile.deps
+
 .PHONY: clean
 .SILENT: run clean
 
 clean:
+	rm Makefile.deps
 	rm -f \$(ODIR)/*.o *~ core \$(INCDIR)/*~ \$(BDIR)/*
 
 run:
