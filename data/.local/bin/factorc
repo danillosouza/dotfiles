@@ -406,11 +406,12 @@ BDIR = ./bin
 DDIR = ./doc
 
 BNAME = ${P_NAME}
+LIBDIR = ${P_NAME}
 LIBNAME= lib${P_NAME}
 
 CC = gcc
 CFLAGS = -I\$(IDIR)${P_LIB} -L\$(LDIR) -std=c11
-CFLAGS += -Wall -Wextra -Wpedantic \
+CFLAGS += -fPIC -Wall -Wextra -Wpedantic \
           -Wformat=2 -Wno-unused-parameter -Wshadow \
           -Wwrite-strings -Wstrict-prototypes -Wold-style-definition \
           -Wredundant-decls -Wnested-externs -Wmissing-include-dirs
@@ -455,6 +456,21 @@ shared:
 	mkdir -p dist/shared/headers
 	\$(CC) -shared -o dist/shared/\$(LIBNAME).so \$(LIBFILES)
 	cp \$(IDIR)/*.h dist/shared/headers
+
+install:
+	cp \$(BDIR)/\$(BNAME) /usr/bin
+
+remove:
+	rm /usr/bin/\$(BNAME)
+
+libinstall:
+	mkdir -p /usr/include/\$(LIBDIR)
+	cp dist/shared/headers/*.h /usr/include/\$(LIBDIR)
+	cp dist/shared/\$(LIBNAME).so /usr/lib
+
+libremove:
+	rm -Rf /usr/include/\$(LIBDIR)
+	rm -f /usr/lib/\$(LIBNAME).so
 
 run:
 	chmod +x \$(BDIR)/\$(BNAME) && \$(BDIR)/\$(BNAME)
