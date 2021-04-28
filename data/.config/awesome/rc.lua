@@ -341,11 +341,12 @@ globalkeys = gears.table.join(
 
     --
     -- Launcher
-    awful.key({ modkey }, "Return", function () awful.spawn(terminal) end,                    {description = "open a terminal", group = "launcher"}),
-    awful.key({ modkey }, "z",      function () awful.spawn(terminal) end,                    {description = "open a terminal", group = "launcher"}),
-    awful.key({ modkey }, "p",      function() menubar.show() end,                            {description = "show the menubar", group = "launcher"}),
-    awful.key({ modkey }, "r",      function () awful.screen.focused().mypromptbox:run() end, {description = "run prompt", group = "launcher"}),
-    awful.key({ modkey }, "y",      function () awful.spawn(terminal.." -e ipython")  end,    {description = "ipython console", group = "launcher"}),
+    awful.key({ modkey }, "Return", function () awful.spawn(terminal) end,                         {description = "open a terminal", group = "launcher"}),
+    awful.key({ modkey }, "z",      function () awful.spawn(terminal) end,                         {description = "open a terminal", group = "launcher"}),
+    awful.key({ modkey }, "p",      function() menubar.show() end,                                 {description = "show the menubar", group = "launcher"}),
+    awful.key({ modkey }, "r",      function () awful.screen.focused().mypromptbox:run() end,      {description = "run prompt", group = "launcher"}),
+    awful.key({ modkey }, "y",      function () awful.spawn(terminal.." -e ipython")  end,         {description = "ipython console", group = "launcher"}),
+    awful.key({ modkey }, "i",      function () awful.spawn(terminal.." -e vim .scratchpad")  end, {description = "scratchpad", group = "launcher"}),
 
     awful.key({ modkey }, "b", function () awful.spawn(browser)     end, {description = "launch Browser", group = "launcher"}),
     awful.key({ modkey }, "e", function () awful.spawn(filemanager) end, {description = "launch filemanager", group = "launcher"}),
