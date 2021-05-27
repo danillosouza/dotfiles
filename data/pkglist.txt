@@ -16,6 +16,7 @@ b43-fwcutter
 bash
 binutils
 bison
+blender
 btrfs-progs
 bzip2
 c-client
@@ -31,6 +32,7 @@ device-mapper
 dhclient
 dhcpcd
 dia
+diceware
 diffutils
 dmraid
 dnsmasq
@@ -42,6 +44,7 @@ exfat-utils
 exo
 f2fs-tools
 fakeroot
+fcgi
 feh
 ffmpegthumbnailer
 figlet
@@ -56,9 +59,12 @@ gawk
 gcc
 gcc-libs
 gd
+gdb
 gettext
 gifsicle
+glfw-x11
 glibc
+glm
 gnome-themes-extra
 golly
 gotop
@@ -70,6 +76,7 @@ gsasl
 gtk-engine-murrine
 gzip
 htop
+igcc
 inetutils
 intel-ucode
 iproute2
@@ -129,7 +136,9 @@ mousepad
 msmtp
 msmtp-mta
 nano
+nasm
 nemo
+nemo-fileroller
 neofetch
 net-snmp
 network-manager-applet
@@ -162,9 +171,11 @@ procps-ng
 psmisc
 pulseaudio
 python-pip
+qemu
 ranger
 re2c
 reiserfsprogs
+renpy
 rsync
 s-nail
 scrot
