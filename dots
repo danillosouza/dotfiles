@@ -35,7 +35,7 @@ pack()
     cp -TRf $HOME/.config/zsh $DOTSDIR/.config/zsh && echo "${EPREFIX} ZenShell"
 
     echo -e "\n${RED}--- PACKING ${HOME}/ ---${NC}\n"
-    cp -TRf $HOME/.vim $DOTSDIR/.vim && echo "${EPREFIX} .vim"
+    cp -TRf $HOME/.vim $DOTSDIR/.vim   && echo "${EPREFIX} .vim"
     cp -f $HOME/.vimrc $DOTSDIR/.vimrc && echo "${EPREFIX} .vimrc"
     cp -f $HOME/.zshrc $DOTSDIR/.zshrc && echo "${EPREFIX} .zshrc"
 
@@ -48,6 +48,10 @@ pack()
     cp -f $HOME/.local/bin/multimon.sh $DOTSDIR/.local/bin/multimon.sh && echo "${EPREFIX} multimon.sh"
     cp -f $HOME/.local/bin/sshot $DOTSDIR/.local/bin/sshot && echo "${EPREFIX} sshot"
     cp -f $HOME/.local/bin/soundsh $DOTSDIR/.local/bin/soundsh && echo "${EPREFIX} soundsh"
+
+    echo -e "\n${RED}--- PACKING EMACS CONFIG ---${NC}\n"
+    cp -TRf $HOME/.emacs.d $DOTSDIR/.emacs.d && echo "${EPREFIX} .emacs.d"
+    cp -TRf $HOME/.doom.d $DOTSDIR/.doom.d   && echo "${EPREFIX} .doom.d"
 
     echo -e "\n${GREEN}All done ;)${NC}\n"
     exit 0
@@ -68,7 +72,7 @@ unpack()
     [[ -d $DOTSDIR/.config/zsh ]] && cp -TRf $DOTSDIR/.config/zsh $HOME/.config/zsh && echo "${EPREFIX} ZenShell"
 
     echo -e "\n${RED}--- UNPACKING ${HOME}/ ---${NC}\n"
-    [[ -d $DOTSDIR/.vim ]] && cp -TRf $DOTSDIR/.vim $HOME/.vim && echo "${EPREFIX} .vim"
+    [[ -d $DOTSDIR/.vim ]]   && cp -TRf $DOTSDIR/.vim $HOME/.vim   && echo "${EPREFIX} .vim"
     [[ -f $DOTSDIR/.vimrc ]] && cp -f $DOTSDIR/.vimrc $HOME/.vimrc && echo "${EPREFIX} .vimrc"
     [[ -f $DOTSDIR/.zshrc ]] && cp -f $DOTSDIR/.zshrc $HOME/.zshrc && echo "${EPREFIX} .zshrc"
 
@@ -81,6 +85,10 @@ unpack()
     [[ -f $DOTSDIR/.local/bin/multimon.sh ]] && cp -f $DOTSDIR/.local/bin/multimon.sh $HOME/.local/bin/multimon.sh && chmod +x $HOME/.local/bin/multimon.sh && echo "${EPREFIX} multimon.sh"
     [[ -f $DOTSDIR/.local/bin/sshot ]] && cp -f $DOTSDIR/.local/bin/sshot $HOME/.local/bin/sshot && chmod +x $HOME/.local/bin/sshot && echo "${EPREFIX} sshot"
     [[ -f $DOTSDIR/.local/bin/soundsh ]] && cp -f $DOTSDIR/.local/bin/soundsh $HOME/.local/bin/soundsh && chmod +x $HOME/.local/bin/soundsh && echo "${EPREFIX} soundsh"
+
+    echo -e "\n${RED}--- UNPACKING EMACS CONFIG ---${NC}\n"
+    [[ -d $DOTSDIR/.emacs.d ]] && cp -TRf $HOME/.emacs.d $DOTSDIR/.emacs.d && echo "${EPREFIX} .emacs.d"
+    [[ -d $DOTSDIR/.doom.d ]]  && cp -TRf $HOME/.doom.d $DOTSDIR/.doom.d   && echo "${EPREFIX} .doom.d"
 
     echo -e "\n${GREEN}All done ;)${NC}\n"
     exit 0

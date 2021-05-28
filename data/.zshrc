@@ -25,6 +25,9 @@ export PATH="$HOME/.npm-global/bin:$PATH"
 # composer globals
 export PATH="$HOME/.config/composer/vendor/bin:$PATH"
 
+# doom emacs
+export PATH="$HOME/.emacs.d/bin:$PATH"
+
 # aliases
 alias l='ls -lh --color=auto'
 alias ll='ls -lah --color=auto'
