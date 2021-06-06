@@ -51,7 +51,7 @@ duplicated()
 # print header
 echo $BLUE
 figlet "FactorC++"
-echo "C++ project scaffold generator v0.5.1"
+echo "C++ project scaffold generator v0.5.5"
 echo $NC
 [[ -z "$P_NAME" ]] && P_DEMONAME="demo" && usage
 
@@ -437,7 +437,10 @@ CFLAGS += -fPIC -Wall -Wextra -Wpedantic \\
           -Wwrite-strings -Wredundant-decls -Wmissing-include-dirs
 
 DEPS = \$(wildcard \$(IDIR)/*.\$(HEXT))
-SOURCES = \$(wildcard \$(SDIR)/*.\$(CEXT)) \$(wildcard \$(SDIR)/**/*.\$(CEXT))
+SOURCES = \$(wildcard \$(SDIR)/*.\$(CEXT)) \\
+		  \$(wildcard \$(SDIR)/**/*.\$(CEXT)) \\
+		  \$(wildcard \$(SDIR)/**/**/*.\$(CEXT))
+
 OBJECTS = \$(patsubst \$(SDIR)/%.\$(CEXT), \$(ODIR)/%.o, \$(SOURCES))
 
 \$(BDIR)/\$(BNAME): \$(OBJECTS)

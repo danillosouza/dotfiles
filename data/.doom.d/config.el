@@ -35,6 +35,15 @@
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type t)
 
+;; default tab width and use spaces as tabs
+(defun infer-indentation-style ()
+  (let ((space-count (how-many "^ " (point-min) (point-max)))
+        (tab-count (how-many "^\t" (point-min) (point-max))))
+    (if (> space-count tab-count) (setq indent-tabs-mode nil))
+    (if (> tab-count space-count) (setq indent-tabs-mode t))))
+
+(setq tab-width 4)
+(infer-indentation-style)
 
 ;; Here are some additional functions/macros that could help you configure Doom:
 ;;

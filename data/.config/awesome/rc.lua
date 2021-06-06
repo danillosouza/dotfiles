@@ -50,7 +50,7 @@ beautiful.notification_font = "Noto Sans Regular 14"
 terminal = "alacritty"
 browser = "firefox"
 filemanager = "nemo"
-editor = "vim"
+editor = "emacs"
 gui_editor="vscodium"
 -- Default modkey.
 -- Usually, Mod4 is the key with a logo between Control and Alt.
@@ -346,7 +346,7 @@ globalkeys = gears.table.join(
     awful.key({ modkey }, "p",      function() menubar.show() end,                                 {description = "show the menubar", group = "launcher"}),
     awful.key({ modkey }, "r",      function () awful.screen.focused().mypromptbox:run() end,      {description = "run prompt", group = "launcher"}),
     awful.key({ modkey }, "y",      function () awful.spawn(terminal.." -e ipython")  end,         {description = "ipython console", group = "launcher"}),
-    awful.key({ modkey }, "i",      function () awful.spawn(terminal.." -e vim .scratchpad")  end, {description = "scratchpad", group = "launcher"}),
+    awful.key({ modkey }, "i",      function () awful.spawn(terminal.." -e emacs -nw .scratchpad.org")  end, {description = "scratchpad", group = "launcher"}),
 
     awful.key({ modkey }, "b", function () awful.spawn(browser)     end, {description = "launch Browser", group = "launcher"}),
     awful.key({ modkey }, "e", function () awful.spawn(filemanager) end, {description = "launch filemanager", group = "launcher"}),

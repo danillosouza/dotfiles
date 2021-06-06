@@ -51,7 +51,7 @@ duplicated()
 # print header
 echo $BLUE
 figlet "FactorC"
-echo "C project scaffold generator v0.5.1"
+echo "C project scaffold generator v0.5.5"
 echo $NC
 [[ -z "$P_NAME" ]] && P_DEMONAME="demo" && usage
 
@@ -438,7 +438,10 @@ ifeq (\$(CC),gcc)
 endif
 
 DEPS = \$(wildcard \$(IDIR)/*.h)
-SOURCES = \$(wildcard \$(SDIR)/*.\$(CEXT)) \$(wildcard \$(SDIR)/**/*.\$(CEXT))
+SOURCES = \$(wildcard \$(SDIR)/*.\$(CEXT)) \\
+		  \$(wildcard \$(SDIR)/**/*.\$(CEXT)) \\
+		  \$(wildcard \$(SDIR)/**/**/*.\$(CEXT))
+
 OBJECTS = \$(patsubst \$(SDIR)/%.c, \$(ODIR)/%.o, \$(SOURCES))
 
 \$(BDIR)/\$(BNAME): \$(OBJECTS)

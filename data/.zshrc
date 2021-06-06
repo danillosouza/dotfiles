@@ -34,6 +34,8 @@ alias ll='ls -lah --color=auto'
 
 alias php='php7'
 
+alias emacs='emacs -nw'
+
 alias screensh="scrot -s ~/media/images/screenshots/%Y%m%d_%H%I%M.png" # default screenshot by selection
 alias screensh-f="scrot ~/media/images/screenshots/%Y%m%d_%H%I%M.png"  # full screenshot
 
