@@ -65,13 +65,13 @@ awful.layout.layouts = {
     awful.layout.suit.tile,
     awful.layout.suit.fair.horizontal,
     awful.layout.suit.fair,
+    awful.layout.suit.max,
     -- awful.layout.suit.spiral.dwindle,
     -- awful.layout.suit.floating,
     -- awful.layout.suit.tile.left,
     -- awful.layout.suit.tile.bottom,
     -- lain.layout.termfair,
     -- awful.layout.suit.tile.top,
-    -- awful.layout.suit.max,
     -- awful.layout.suit.max.fullscreen,
     -- awful.layout.suit.magnifier,
     -- awful.layout.suit.corner.nw,
@@ -292,6 +292,17 @@ globalkeys = gears.table.join(
     
     --
     -- Client
+    awful.key({ modkey, 'Control' }, 't',
+        function()
+            for s in screen do
+                s.mywibox.visible = not s.mywibox.visible
+                if s.mybottomwibox then
+                    s.mybottomwibox.visible = not s.mybottomwibox.visible
+                end
+           end
+        end,
+        {description = 'toggle wibar', group = 'awesome'}),
+
     awful.key({ modkey, "Shift" }, "j", function () awful.client.swap.byidx( 1) end, {description = "swap with next client by index", group = "client"}),
     awful.key({ modkey, "Shift" }, "k", function () awful.client.swap.byidx(-1) end, {description = "swap with previous client by index", group = "client"}),
     awful.key({ modkey }, "u", awful.client.urgent.jumpto,                           {description = "jump to urgent client", group = "client"}),
