@@ -34,6 +34,7 @@ usage()
     echo -e "\tMODE\t- Create bare minimum project code for one of the available modes:"
     echo -e "\t\t\t\tgetopt"
     echo -e "\t\t\t\tcurses"
+    echo -e "\t\t\t\tbearlib"
     echo -e "\t\t\t\tsdl"
     echo -e "\t\t\t\topengl"
     echo -e "\n\tSTRUCTURE\n"
@@ -51,7 +52,7 @@ duplicated()
 # print header
 echo $BLUE
 figlet "FactorC"
-echo "C project scaffold generator v0.5.5"
+echo "C project scaffold generator v0.5.6"
 echo $NC
 [[ -z "$P_NAME" ]] && P_DEMONAME="demo" && usage
 
@@ -118,6 +119,61 @@ int main(int argc, char **argv)
     
     endwin();
     return 0;
+}
+EOD
+
+### BEARLIB
+elif [[ $P_MODE == "bearlib" ]]; then
+    P_STDIO="false"
+    P_LIB="${P_LIB} -lBearLibTerminal"
+    P_INC=`echo -e "${P_INC}#include <BearLibTerminal.h>\n"`
+    read -r -d '' P_CODE << EOD
+const int WINDOW_W = 1280;
+const int WINDOW_H = 720;
+const int CELL_W = 16;
+const int CELL_H = 16;
+
+int main(int argc, char **argv)
+{
+    // initialize bear terminal
+    terminal_open();
+
+    // config terminal (enter fullscreen with alt + enter)
+    terminal_set("input: precise-mouse=true, mouse-cursor=false");
+    terminal_setf("window: title='BearLib Demo', cellsize=%dx%d, size=%dx%d, resize-mode=fit, client-size=%dx%d",
+        CELL_W, CELL_H, (WINDOW_W / CELL_W), (WINDOW_H / CELL_H), WINDOW_W, WINDOW_H);
+
+    // wait until user close the window by pressing 'q'
+    int key;
+    int running = 1;
+    while (running) {
+        terminal_clear();
+
+        // print title text
+        terminal_color(0xFF00FFFF);
+        terminal_layer(2);
+        terminal_bkcolor(0xFF151515);
+        terminal_print(1, 1, "[color=red]Hello[/color] ${P_NAME}!");
+
+        if (terminal_has_input()) {
+            key = terminal_read();
+
+            switch (key) {
+                case TK_Q:
+                    running = 0;
+                    break;
+                
+                default:
+                    break;
+            }
+        }
+
+        // update terminal
+        terminal_refresh();
+    }
+
+    // exit bear terminal
+    terminal_close();
 }
 EOD
 
@@ -426,7 +482,7 @@ LIBNAME= lib${P_NAME}
 
 MK = mkdir -p
 CC = gcc
-CFLAGS = -I\$(IDIR)${P_LIB} -L\$(LDIR) -std=c11
+CFLAGS = -I\$(IDIR)${P_LIB} -L\$(LDIR) -std=c17
 CFLAGS += -fPIC -Wall -Wextra -Wpedantic \\
           -Wformat=2 -Wno-unused-parameter -Wshadow \\
           -Wwrite-strings -Wstrict-prototypes -Wold-style-definition \\
@@ -438,9 +494,9 @@ ifeq (\$(CC),gcc)
 endif
 
 DEPS = \$(wildcard \$(IDIR)/*.h)
-SOURCES = \$(wildcard \$(SDIR)/*.\$(CEXT)) \\
-		  \$(wildcard \$(SDIR)/**/*.\$(CEXT)) \\
-		  \$(wildcard \$(SDIR)/**/**/*.\$(CEXT))
+SOURCES = \$(wildcard \$(SDIR)/*.c) \\
+		  \$(wildcard \$(SDIR)/**/*.c) \\
+		  \$(wildcard \$(SDIR)/**/**/*.c)
 
 OBJECTS = \$(patsubst \$(SDIR)/%.c, \$(ODIR)/%.o, \$(SOURCES))
 
