@@ -64,9 +64,11 @@ alias maxbkl="sudo zsh -c 'echo 255 > /sys/class/backlight/amdgpu_bl0/brightness
 
 # :)
 alias minecraft="flatpak run com.teamshiginima.ShiginimaLauncher"
+alias dfortress="exec /home/azrl/media/games/linux/dwarf_fortress/linux_lnp/LinuxLNP-0.43.05-r07/startlnp"
 
 
 # Proton Aliases
 alias rexpaint="proton run /home/azrl/.proton/pfx/drive_c/Tools/REXPaint-v1.60/REXPaint.exe"
 alias rpaex="proton run /home/azrl/.proton/pfx/drive_c/Tools/RPAEx/rpaExtract.exe"
 alias daz3d="proton run /home/azrl/.proton/pfx/drive_c/Program\ Files/DAZ\ 3D/DazCentral1/DazCentral.exe"
+
