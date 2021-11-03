@@ -1,6 +1,6 @@
 #!/bin/zsh
-default="eDP"
-external="HDMI-A-0"
+default="$(xrandr | grep -i edp | awk '{print $1}')"
+external="$(xrandr | grep -i hdmi | awk '{print $1}')"
 mons=`xrandr | grep "$external connected" | wc -l`
 
 if [ $mons > 0 ]

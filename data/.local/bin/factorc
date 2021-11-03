@@ -545,6 +545,7 @@ libinstall:
 	mkdir -p /usr/include/\$(LIBDIR)
 	cp -Rf dist/shared/headers/* /usr/include/\$(LIBDIR)
 	cp dist/shared/\$(LIBNAME).so /usr/lib
+    ldconfig
 
 libremove:
 	rm -Rf /usr/include/\$(LIBDIR)
