@@ -21,7 +21,7 @@ struct_summary()
     echo -e "\t├── ${BLUE}lib/${NC}"
     echo -e "\t├── ${BLUE}obj/${NC}"
     echo -e "\t├── ${BLUE}src/${NC}"
-    echo -e "\t│   └── ${P_DEMONAME}.cpp"
+    echo -e "\t│   └── ${P_DEMONAME}.cc"
     echo -e "\t├── .gitignore"
     echo -e "\t├── Makefile"
     echo -e "\t└── README.md"
@@ -34,6 +34,7 @@ usage()
     echo -e "\tMODE\t- Create bare minimum project code for one of the available modes:"
     echo -e "\t\t\t\tgetopt"
     echo -e "\t\t\t\tcurses"
+    echo -e "\t\t\t\tbearlib"
     echo -e "\t\t\t\tsdl"
     echo -e "\t\t\t\topengl"
     echo -e "\n\tSTRUCTURE\n"
@@ -117,6 +118,62 @@ int main(int argc, char **argv)
     }
     
     endwin();
+    return 0;
+}
+EOD
+
+### BEARLIB
+elif [[ $P_MODE == "bearlib" ]]; then
+    P_IOSTREAM="false"
+    P_LIB="${P_LIB} -lBearLibTerminal"
+    P_INC=`echo -e "${P_INC}#include <BearLibTerminal.h>\n"`
+    read -r -d '' P_CODE << EOD
+const int WINDOW_W = 1280;
+const int WINDOW_H = 720;
+const int CELL_W = 8;
+const int CELL_H = 16;
+
+int main(int argc, char **argv)
+{
+    // initialize bear terminal
+    terminal_open();
+
+    // config terminal (enter fullscreen with alt + enter)
+    terminal_set("input: precise-mouse=true, mouse-cursor=false");
+    terminal_setf("window: title='BearLib Demo', cellsize=%dx%d, size=%dx%d, resize-mode=fit, client-size=%dx%d",
+        CELL_W, CELL_H, (WINDOW_W / CELL_W), (WINDOW_H / CELL_H), WINDOW_W, WINDOW_H);
+
+    // wait until user close the window by pressing 'q'
+    int key;
+    int running = 1;
+    while (running) {
+        terminal_clear();
+
+        // print title text
+        terminal_color(0xFF00FFFF);
+        terminal_layer(2);
+        terminal_bkcolor(0xFF151515);
+        terminal_print(1, 1, "[color=red]Hello[/color] ${P_NAME}!");
+
+        if (terminal_has_input()) {
+            key = terminal_read();
+
+            switch (key) {
+                case TK_Q:
+                    running = 0;
+                    break;
+                
+                default:
+                    break;
+            }
+        }
+
+        // update terminal
+        terminal_refresh();
+    }
+
+    // exit bear terminal
+    terminal_close();
     return 0;
 }
 EOD
@@ -220,93 +277,202 @@ EOD
 
 ### OPENGL
 elif [[ $P_MODE == "opengl" ]]; then
-    P_IOSTREAM="true"
-    P_LIB="${P_LIB} -lSDL2 -lGL"
-    P_INC=`echo -e "${P_INC}#include <SDL2/SDL.h>\n#include <GL/gl.h>\n"`
+    P_IOSTREAM="false"
+    P_LIB="${P_LIB} -lGL -lGLEW -lglfw"
+    P_INC=`echo -e "${P_INC}#include <GL/glew.h>\n#include <GL/gl.h>\n#include <GLFW/glfw3.h>\n#include <cstring>\n#include <cmath>\n"`
     read -r -d '' P_CODE << EOD
+// callback for window resizing
+void framebuffer_size_callback(GLFWwindow *window, int width, int height)
+{
+    glViewport(0, 0, width, height);
+}
+
+
+// handle user input
+void processInput(GLFWwindow *window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, true);
+    }
+}
+
+
 int main(int argc, char **argv)
 {
-    const int SCREEN_W = 1280;
-    const int SCREEN_H = 720;
-    const int WINDOW_FLAGS = SDL_WINDOW_OPENGL;
-    const Uint8 *keystates = SDL_GetKeyboardState(NULL);
+    const int WINDOW_W = 1280, WINDOW_H = 720;
+    GLFWwindow* window;
+
+    // Initialize the library
+    if (! glfwInit())
+        return -1;
     
-    int running = 1;
-    int fullscreen = 0;
-    float FPS = 60.0;
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    SDL_Window *window = NULL;
-    SDL_Event event;
-
-    // initialize sdl components
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        printf("SDL could not initialize! Error: %s", SDL_GetError());
-        exit(1);
+    // Create a windowed mode window and its OpenGL context
+    window = glfwCreateWindow(WINDOW_W, WINDOW_H, "HelloGL", NULL, NULL);
+    if (! window) {
+        glfwTerminate();
+        return -1;
     }
 
-    // create screen
-    window = SDL_CreateWindow(
-        "${P_NAME}",
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
-        SCREEN_W,
-        SCREEN_H,
-        WINDOW_FLAGS);
+    // Make the window's context current
+    glfwMakeContextCurrent(window);
 
-    if (window == NULL) {
-        printf("Window could not be created! Error: %s", SDL_GetError());
-        exit(1);
+    // Initialize GLEW
+    GLenum glew_err = glewInit();
+    if (glew_err != GLEW_OK) {
+        glfwTerminate();
+        return -1;
     }
 
-    // opengl configuration
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    // Defining viewport for opengl rendering
+    glViewport(0, 0, WINDOW_W, WINDOW_H);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-    // create opengl context and attach it to the window
-    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+    //
+    // SHADERS
+    //
 
-    // main loop
-    unsigned int loop_start, loop_end, delta;
-    while (running) {
-        // keeps the screen at 60fps
-        loop_start = SDL_GetTicks();
-        delta      = loop_start - loop_end;
-        if (delta <= 1000 / FPS) continue;
+    // Vertex Shader
+    const char *vertexShaderSource = R"VTX(
+        #version 330 core
+        layout (location = 0) in vec3 pos;
+        layout (location = 1) in vec3 defaultColor;
+        out vec3 v_color;
 
-        // handling events
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) running = 0;
+        uniform vec3 customColor;
+
+        void main() {
+            gl_Position = vec4(pos.xyz, 1.0f);
+            v_color = defaultColor;
         }
+    )VTX";
 
-        // handling keyboard events
-        if (keystates[SDL_SCANCODE_ESCAPE]) running = 0;
-        if (keystates[SDL_SCANCODE_F11])    fullscreen = !fullscreen;
+    unsigned int vertexShader;
+    GLint vertexShaderSourceSize = strlen(vertexShaderSource);
+    vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexShaderSource, &vertexShaderSourceSize);
+    glCompileShader(vertexShader);
 
-        // update window state if needed
-        if (fullscreen) SDL_SetWindowFullscreen(window, WINDOW_FLAGS | SDL_WINDOW_FULLSCREEN_DESKTOP);
-        else SDL_SetWindowFullscreen(window, WINDOW_FLAGS);
+    // Fragment Shader
+    const char *fragmentShaderSource = R"FRAG(
+        #version 330 core
+        in vec3 v_color;
+        out vec4 color;
 
-        // clear gl context
-        glViewport(0, 0, SCREEN_W, SCREEN_H);
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        void main() {
+            color = vec4(v_color, 1.0f);
+        }
+    )FRAG";
+
+    unsigned int fragmentShader;
+    GLint fragmentShaderSourceSize = strlen(fragmentShaderSource);
+    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSource, &fragmentShaderSourceSize);
+    glCompileShader(fragmentShader);
+
+    // Shader Program
+    unsigned int shaderProgram;
+    shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+
+    // Delete shader objects once linked
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    //
+    // VERTEX DATA
+    //
+    
+    // Creating triangle vertices
+    float vertices[] = {
+        // positions          // colors
+         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f, // top right
+         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f, // bottom right
+        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f, // bottom left
+        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f  // top left
+    };
+
+    unsigned int indices[] = {
+        0, 1, 3, // first triangle
+        1, 2, 3  // second triangle
+    };
+
+    // Vertex Array Object
+    unsigned int VAO;
+    glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
+
+    // Element/Index Buffer Object
+    unsigned int EBO;
+    glGenBuffers(1, &EBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    // Vertex Buffer Object
+    unsigned int VBO; // store the object id
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // Tells OpenGL how to interpret vertex data
+    int attr_position = 0, attr_color = 1; // data starts at index 0, as stated in the shader (location = 0)
+    int size_position = 3, size_color = 3;  // size of the vertex attribute, in this case 3 for a vec3 (x, y, z)
+    int stride = 6 * sizeof(float); // space between consecutive attributes, we advance in steps of 3 as it is tightly packed
+    glVertexAttribPointer(attr_position, size_position, GL_FLOAT, GL_FALSE, stride, (void *) 0);
+    glEnableVertexAttribArray(attr_position);
+
+    glVertexAttribPointer(attr_color, size_color, GL_FLOAT, GL_FALSE, stride, (void *) (3 * sizeof(float)));
+    glEnableVertexAttribArray(attr_color);
+
+    // unbind buffers
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    //
+    // MAIN LOOP
+    //
+
+    // Loop until the user closes the window
+    while (! glfwWindowShouldClose(window)) {
+        // Process user input
+        processInput(window);
+
+        // Render here
+        glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // draws rectangle
-        glColor3f(0.0f, 0.0f, 0.666f);
-        glRectf(-0.05f, 0.09f, 0.05f, -0.09f);
+        // Prepare buffers and shaders
+        glUseProgram(shaderProgram);
+        glBindVertexArray(VAO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 
-        // updating the screen
-        SDL_GL_SwapWindow(window);
+        // passing custom color to the shaders
+        float timeValue = glfwGetTime();
+        float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
+        int uniformCustomColor = glGetUniformLocation(shaderProgram, "customColor");
+        glUniform4f(uniformCustomColor, 1.0f, greenValue, 0.2f, 1.0f);
 
-        // keeping track of elapsed time
-        loop_end = SDL_GetTicks();
+        // Draw elements to the screen
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // GL_LINE for wireframe mode
+        glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+
+        // Swap front and back buffers
+        glfwSwapBuffers(window);
+
+        // Poll for and process events
+        glfwPollEvents();
     }
 
-    std::cout << glGetString(GL_VERSION) << std::endl;
-
-    SDL_DestroyWindow(window);
-    SDL_Quit();
+    glfwTerminate();
     return 0;
 }
 EOD
@@ -429,8 +595,8 @@ LIBNAME = lib${P_NAME}
 
 MK = mkdir -p
 CC = g++
-CEXT = cpp
-HEXT = hpp
+CEXT = cc
+HEXT = h
 CFLAGS = -I\$(IDIR)${P_LIB} -L\$(LDIR) -std=c++17
 CFLAGS += -fPIC -Wall -Wextra -Wpedantic \\
           -Wformat=2 -Wno-unused-parameter -Wshadow \\
@@ -491,7 +657,6 @@ libinstall:
 	mkdir -p /usr/include/\$(LIBDIR)
 	cp -Rf dist/shared/headers/* /usr/include/\$(LIBDIR)
 	cp dist/shared/\$(LIBNAME).so /usr/lib
-    ldconfig
 
 libremove:
 	rm -Rf /usr/include/\$(LIBDIR)
@@ -545,7 +710,7 @@ EOT
 
 # main source file
 echo "${BLUE}[${CYAN}+${BLUE}]${NC} Creating placeholder code"
-cat >> $P_NAME/src/main.cpp <<EOT
+cat >> $P_NAME/src/main.cc <<EOT
 ${P_INC}
 
 ${P_CODE}

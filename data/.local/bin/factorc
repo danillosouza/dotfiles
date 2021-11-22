@@ -35,6 +35,7 @@ usage()
     echo -e "\t\t\t\tgetopt"
     echo -e "\t\t\t\tcurses"
     echo -e "\t\t\t\tbearlib"
+    echo -e "\t\t\t\tbearlib-full"
     echo -e "\t\t\t\tsdl"
     echo -e "\t\t\t\topengl"
     echo -e "\n\tSTRUCTURE\n"
@@ -174,6 +175,69 @@ int main(int argc, char **argv)
 
     // exit bear terminal
     terminal_close();
+    return 0;
+}
+EOD
+
+### BEARLIB-FULL
+elif [[ $P_MODE == "bearlib-full" ]]; then
+    P_STDIO="false"
+    P_LIB="${P_LIB} -lBearLibTerminal"
+    P_INC=`echo -e "${P_INC}#include <BearLibTerminal.h>\n"`
+    read -r -d '' P_CODE << EOD
+#include <stdlib.h>
+#include <BearLibTerminal.h>
+#include "config.h"
+#include "screens.h"
+
+const int WINDOW_W = 1280;
+const int WINDOW_H = 720;
+const int CELL_W = 8;
+const int CELL_H = 16;
+const int COLS_W = WINDOW_W  / CELL_W;
+const int COLS_H = WINDOW_H / CELL_H;
+
+int main(int argc, char **argv)
+{
+    // initialize bear terminal
+    terminal_open();
+
+    screen_state state = SCREEN_START;
+
+    // config terminal (enter fullscreen with alt + enter)
+    terminal_set("input.filter = [keyboard, mouse]");
+    terminal_set("input: precise-mouse=true, mouse-cursor=false");
+    terminal_setf("window: title='BearLib Demo', cellsize=%dx%d, size=%dx%d, resize-mode=fit, client-size=%dx%d",
+        CELL_W, CELL_H, (WINDOW_W / CELL_W), (WINDOW_H / CELL_H), WINDOW_W, WINDOW_H);
+
+    while (state != SCREEN_EXIT) {
+        terminal_clear();
+
+        // print title text
+        switch (state) {
+            case SCREEN_START:
+                main_screen(&state);
+                break;
+            
+            case SCREEN_NEW:
+                new_game_screen(&state);
+                break;
+            
+            case SCREEN_LOAD:
+                load_game_screen(&state);
+                break;
+            
+            case SCREEN_EXIT:
+                // on exit
+                break;
+        }
+
+        // update terminal
+        terminal_refresh();
+    }
+
+    // exit bear terminal
+    terminal_close();
 }
 EOD
 
@@ -277,90 +341,181 @@ EOD
 ### OPENGL
 elif [[ $P_MODE == "opengl" ]]; then
     P_STDIO="false"
-    P_LIB="${P_LIB} -lSDL2 -lGL"
-    P_INC=`echo -e "${P_INC}#include <SDL2/SDL.h>\n#include <GL/gl.h>\n"`
+    P_LIB="${P_LIB} -lGL -lGLEW -lglfw"
+    P_INC=`echo -e "${P_INC}#include <GL/glew.h>\n#include <GL/gl.h>\n#include <GLFW/glfw3.h>\n#include <stdbool.h>\n#include <string.h>\n"`
     read -r -d '' P_CODE << EOD
-int main(int argc, char** argv)
+// callback for window resizing
+void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
-    const int SCREEN_W = 1280;
-    const int SCREEN_H = 720;
-    const int WINDOW_FLAGS = SDL_WINDOW_OPENGL;
-    const Uint8 *keystates = SDL_GetKeyboardState(NULL);
+    glViewport(0, 0, width, height);
+}
+
+
+// handle user input
+void processInput(GLFWwindow *window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, true);
+    }
+}
+
+
+int main(int argc, char **argv)
+{
+    const int WINDOW_W = 1280, WINDOW_H = 720;
+    GLFWwindow* window;
+
+    // Initialize the library
+    if (! glfwInit())
+        return -1;
     
-    int running = 1;
-    int fullscreen = 0;
-    float FPS = 60.0;
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    SDL_Window *window = NULL;
-    SDL_Event event;
-
-    // initialize sdl components
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        printf("SDL could not initialize! Error: %s", SDL_GetError());
-        exit(1);
+    // Create a windowed mode window and its OpenGL context
+    window = glfwCreateWindow(WINDOW_W, WINDOW_H, "HelloGL", NULL, NULL);
+    if (! window) {
+        glfwTerminate();
+        return -1;
     }
 
-    // create screen
-    window = SDL_CreateWindow(
-        "${P_NAME}",
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
-        SCREEN_W,
-        SCREEN_H,
-        WINDOW_FLAGS);
+    // Make the window's context current
+    glfwMakeContextCurrent(window);
 
-    if (window == NULL) {
-        printf("Window could not be created! Error: %s", SDL_GetError());
-        exit(1);
+    // Initialize GLEW
+    GLenum glew_err = glewInit();
+    if (glew_err != GLEW_OK) {
+        glfwTerminate();
+        return -1;
     }
 
-    // opengl configuration
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    // Defining viewport for opengl rendering
+    glViewport(0, 0, WINDOW_W, WINDOW_H);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-    // create opengl context and attach it to the window
-    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+    //
+    // SHADERS
+    //
 
-    // main loop
-    unsigned int loop_start, loop_end, delta;
-    while (running) {
-        // keeps the screen at 60fps
-        loop_start = SDL_GetTicks();
-        delta      = loop_start - loop_end;
-        if (delta <= 1000 / FPS) continue;
+    // Vertex Shader
+    const char *vertexShaderSource = "#version 330 core\n"
+        "layout (location = 0) in vec3 pos;\n"
+        "void main()\n"
+        "{\n"
+        "   gl_Position = vec4(pos.x, pos.y, pos.z, 1.0f);\n"
+        "}\0";
 
-        // handling events
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) running = 0;
-        }
+    unsigned int vertexShader;
+    GLint vertexShaderSourceSize = strlen(vertexShaderSource);
+    vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexShaderSource, &vertexShaderSourceSize);
+    glCompileShader(vertexShader);
 
-        // handling keyboard events
-        if (keystates[SDL_SCANCODE_ESCAPE]) running = 0;
-        if (keystates[SDL_SCANCODE_F11])    fullscreen = !fullscreen;
+    // Fragment Shader
+    const char *fragmentShaderSource = "#version 330 core\n"
+        "out vec4 color;\n"
+        "void main()\n"
+        "{\n"
+        "   color = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+        "}\0";
 
-        // update window state if needed
-        if (fullscreen) SDL_SetWindowFullscreen(window, WINDOW_FLAGS | SDL_WINDOW_FULLSCREEN_DESKTOP);
-        else SDL_SetWindowFullscreen(window, WINDOW_FLAGS);
+    unsigned int fragmentShader;
+    GLint fragmentShaderSourceSize = strlen(fragmentShaderSource);
+    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSource, &fragmentShaderSourceSize);
+    glCompileShader(fragmentShader);
 
-        // clear gl context
-        glViewport(0, 0, SCREEN_W, SCREEN_H);
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    // Shader Program
+    unsigned int shaderProgram;
+    shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+
+    // Use program and delete shader objects once linked
+    glUseProgram(shaderProgram);
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    //
+    // VERTEX DATA
+    //
+    
+    // Creating triangle vertices
+    float vertices[] = {
+         0.5f,  0.5f, 0.0f,  // top right
+         0.5f, -0.5f, 0.0f,  // bottom right
+        -0.5f, -0.5f, 0.0f,  // bottom left
+        -0.5f,  0.5f, 0.0f   // top left
+    };
+
+    unsigned int indices[] = {
+        0, 1, 3, // first triangle
+        1, 2, 3  // second triangle
+    };
+
+    // Vertex Array Object
+    unsigned int VAO;
+    glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
+
+    // Element/Index Buffer Object
+    unsigned int EBO;
+    glGenBuffers(1, &EBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    // Vertex Buffer Object
+    unsigned int VBO; // store the object id
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // Tells OpenGL how to interpret vertex data
+    int index = 0; // data starts at index 0, as stated in the shader (location = 0)
+    int size = 3;  // size of the vertex attribute, in this case 3 for a vec3 (x, y, z)
+    int stride = 3 * sizeof(float); // space between consecutive attributes, we advance in steps of 3 as it is tightly packed
+    glVertexAttribPointer(index, size, GL_FLOAT, GL_FALSE, stride, (void *) 0);
+    glEnableVertexAttribArray(index);
+
+    // unbind buffers
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    //
+    // MAIN LOOP
+    //
+
+    // Loop until the user closes the window
+    while (! glfwWindowShouldClose(window)) {
+        // Process user input
+        processInput(window);
+
+        // Render here
+        glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // draws rectangle
-        glColor3f(0.0f, 0.0f, 0.666f);
-        glRectf(-0.05f, 0.09f, 0.05f, -0.09f);
+        // Draw elements to the screen
+        glBindVertexArray(VAO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 
-        // updating the screen
-        SDL_GL_SwapWindow(window);
+        // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // fireframe mode
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
 
-        // keeping track of elapsed time
-        loop_end = SDL_GetTicks();
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+
+        // Swap front and back buffers
+        glfwSwapBuffers(window);
+
+        // Poll for and process events
+        glfwPollEvents();
     }
 
-    SDL_DestroyWindow(window);
-    SDL_Quit();
+    glfwTerminate();
     return 0;
 }
 EOD
@@ -545,7 +700,6 @@ libinstall:
 	mkdir -p /usr/include/\$(LIBDIR)
 	cp -Rf dist/shared/headers/* /usr/include/\$(LIBDIR)
 	cp dist/shared/\$(LIBNAME).so /usr/lib
-    ldconfig
 
 libremove:
 	rm -Rf /usr/include/\$(LIBDIR)
@@ -607,6 +761,512 @@ ${P_INC}
 
 ${P_CODE}
 EOT
+
+################## BEGIN ADITIONALS ###################
+
+if [[ $P_MODE == "bearlib-full" ]]; then
+    ##
+    ##
+    cat >> $P_NAME/src/config.h <<EOT
+${P_INC}
+#pragma once
+
+extern const int WINDOW_W;
+extern const int WINDOW_H;
+extern const int CELL_W;
+extern const int CELL_H;
+extern const int COLS_W;
+extern const int COLS_H;
+EOT
+
+    ##
+    ##
+    cat >> $P_NAME/src/screens.h <<EOT
+#pragma once
+
+typedef enum _screen_state {
+    SCREEN_START,
+    SCREEN_NEW,
+    SCREEN_LOAD,
+    SCREEN_EXIT
+} screen_state;
+
+typedef enum _menu_state {
+    MENU_NONE,
+    MENU_INVENTORY,
+    MENU_SKILLS,
+} menu_state;
+
+void _window_full_frame_border_simple(const char *);
+void _window_full_frame_border_fancy(void);
+
+void main_screen(screen_state*);
+void main_screen_state(screen_state*);
+
+void new_game_screen(screen_state*);
+void new_game_screen_state(int, screen_state*, menu_state*, int*, int*, const int, const int);
+
+void load_game_screen(screen_state*);
+void load_game_screen_state(screen_state*);
+
+void menu_inventory(int, screen_state*, menu_state*);
+void menu_inventory_state(int, screen_state*, menu_state*);
+
+void menu_skills(int, screen_state*, menu_state*);
+void menu_skills_state(int, screen_state*, menu_state*);
+EOT
+
+    ##
+    ##
+    cat >> $P_NAME/src/screens.c <<EOT
+#include <stdbool.h>
+#include <stdio.h>
+#include <BearLibTerminal.h>
+#include "config.h"
+#include "screens.h"
+#include "map.h"
+
+const int LAYER_MAP = 0;
+const int LAYER_PLAYER = 1;
+const int LAYER_GUI = 2;
+
+
+// -------------------------
+// Window Utilities
+// -------------------------
+void _window_full_frame_border_simple(const char *texture)
+{
+    terminal_clear();
+
+    for (int x=1; x < COLS_W-1; x++) {
+        terminal_print(x, 1, texture);
+        terminal_print(x, COLS_H-2, texture);
+    }
+
+    for (int y=1; y < COLS_H-1; y++) {
+        terminal_print(1, y, texture);
+        terminal_print(COLS_W-2, y, texture);
+    }
+}
+
+void _window_full_frame_border_fancy(void)
+{
+    terminal_clear();
+
+    for (int x=1; x < COLS_W-1; x++) {
+        terminal_print(x, 1, "═");
+        terminal_print(x, COLS_H-2, "═");
+    }
+
+    for (int y=1; y < COLS_H-1; y++) {
+        terminal_print(1, y, "║");
+        terminal_print(COLS_W-2, y, "║");
+    }
+
+    terminal_print(1, 1, "╔");
+    terminal_print(COLS_W-2, 1, "╗");
+    terminal_print(COLS_W-2, COLS_H-2, "╝");
+    terminal_print(1, COLS_H-2, "╚");
+}
+
+// -------------------------
+// Main Menu
+// -------------------------
+void main_screen(screen_state *state)
+{
+    terminal_layer(LAYER_GUI);
+    terminal_color(0xFF00FFFF);
+    terminal_bkcolor(0xFF151515);
+    terminal_print(1, 1, "[color=red]Hello[/color] c-bear-screens!");
+    terminal_print(1, 3, "[[N]]         New game");
+    terminal_print(1, 4, "[[L]]         Load game");
+    terminal_print(1, 5, "[[Alt+Enter]] Toggle fullscreen");
+    terminal_print(1, 7, "[[Ctrl+Q]]    Exit");
+
+    main_screen_state(state);
+}
+
+void main_screen_state(screen_state *state)
+{
+    static int mmoved=0, mx=0, my=0;
+    static int lclick=0, lx=0, ly=0;
+    static int rclick=0, rx=0, ry=0;
+
+    if (terminal_has_input()) {
+        switch (terminal_read()) {
+            case TK_Q:
+                if (terminal_state(TK_CONTROL)) {
+                    *state = SCREEN_EXIT;
+                }
+                break;
+            
+            case TK_N:
+                *state = SCREEN_NEW;
+                break;
+            
+            case TK_L:
+                *state = SCREEN_LOAD;
+                break;
+            
+            case TK_MOUSE_MOVE: {
+                mmoved = 1;
+                mx = terminal_state(TK_MOUSE_X);
+                my = terminal_state(TK_MOUSE_Y);
+                break;
+            }
+
+            case TK_MOUSE_LEFT: {
+                rclick = 0;
+                lclick = 1;
+
+                lx = terminal_state(TK_MOUSE_X);
+                ly = terminal_state(TK_MOUSE_Y);
+                break;
+            }
+
+            case TK_MOUSE_RIGHT: {
+                lclick = 0;
+                rclick = 1;
+
+                rx = terminal_state(TK_MOUSE_X);
+                ry = terminal_state(TK_MOUSE_Y);
+                break;
+            }
+
+            default:
+                break;
+        }
+    }
+
+    if (lclick) {
+        terminal_layer(LAYER_GUI);
+        terminal_printf(1, 11, "[color=cyan]Left click at:[/color] [color=pink]%d, %d[/color]", lx, ly);
+    } else if (rclick) {
+        terminal_layer(LAYER_GUI);
+        terminal_printf(1, 11, "[color=cyan]Right click at:[/color] [color=pink]%d, %d[/color]", rx, ry);
+    }
+
+    if (mmoved) {
+        terminal_layer(LAYER_GUI);
+        terminal_printf(1, 10, "[color=cyan]Mouse coordinates:[/color] [color=green]%d, %d[/color]", mx, my);
+        
+        terminal_layer(LAYER_MAP);
+        terminal_print(mx, my, "[color=red]█[/color]");
+    }
+}
+
+
+// -------------------------
+// Load Menu
+// -------------------------
+void load_game_screen(screen_state *state)
+{
+    terminal_color(0xFF00FFFF);
+    terminal_layer(0);
+    terminal_bkcolor(0xFF151515);
+    terminal_print(1, 1, "[color=red]Load[/color] new game!");
+    terminal_print(1, 3, "[[B]] Back to main screen");
+
+    load_game_screen_state(state);
+}
+
+void load_game_screen_state(screen_state *state)
+{
+    if (terminal_has_input()) {
+        switch (terminal_read()) {
+            case TK_B:
+                *state = SCREEN_START;
+                break;
+            
+            default:
+                break;
+        }
+    }
+}
+
+
+// -------------------------
+// Game Level
+// -------------------------
+void new_game_screen(screen_state *state)
+{
+    static int x=10, y=10;
+    static menu_state mstate = MENU_NONE;
+    static char **map;
+
+    // create the map with the double the size of the screen
+    int map_w = COLS_W * 2;
+    int map_h = COLS_H * 2; 
+
+    if (map == NULL) {
+        map = map_make(map_w, map_h);
+        map_fill_basic_dungeon(map);
+    }
+
+    const int PSIZE = 50;
+    char player[PSIZE];
+
+    // camera calculations
+    bool restrictCameraToMap = false;
+    int offset_x = x - (COLS_W / 2);
+    int offset_y = y - (COLS_H / 2);
+
+    if (restrictCameraToMap) {
+        // only works if maps is at least the size of the screen
+        if (map_w >= COLS_W && map_h >= COLS_H) {
+            if (offset_x < 0) offset_x = 0;
+            if (offset_x > (map_w - COLS_W)) offset_x = map_w - COLS_W;
+
+            if (offset_y < 0) offset_y = 0;
+            if (offset_y > (map_h - COLS_H)) offset_y = map_h - COLS_H;
+        }
+    }
+
+    // render map
+    terminal_layer(LAYER_MAP);
+    for (int col=0; col < map_w; ++col) {
+        for (int row=0; row < map_h; ++row) {
+
+            if (row+offset_y >= 0
+                && col+offset_x >= 0
+                && row+offset_y < map_h
+                && col+offset_x < map_w) {
+                terminal_printf(col, row, "[color=#333333]%c[/color]", map[col][row]);
+            }
+            else {
+                terminal_printf(col, row, " ");
+            }
+
+        }
+    }
+
+    // render player
+    snprintf(player, PSIZE, "[color=%s]%c[/color]", "purple", '@');
+    terminal_layer(LAYER_MAP);
+    terminal_print((x - offset_x), (y - offset_y), player);
+
+    // render gui
+    terminal_layer(LAYER_GUI);
+    terminal_print(1, 2, "[[B]] Back to menu");
+    terminal_print(1, 3, "[[I]] Inventory");
+    terminal_print(1, 4, "[[K]] Skills");
+
+    // debug info
+    terminal_printf(1, 6, "Map Size [[W: %3d, W: %3d]]", map_w, map_h);
+    terminal_printf(1, 7, "Player   [[X: %3d, Y: %3d]]", x, y);
+    
+    int input = 0;
+    if (terminal_has_input()) {
+        input = terminal_read();
+    }
+
+    switch (mstate) {
+        case MENU_INVENTORY:
+            menu_inventory(input, state, &mstate);
+            break;
+        
+        case MENU_SKILLS:
+            menu_skills(input, state, &mstate);
+            break;
+        
+        default:
+            new_game_screen_state(input, state, &mstate, &x, &y, map_w, map_h);
+            break;
+    }
+}
+
+void new_game_screen_state(int input, screen_state *state, menu_state *mstate, int *x, int *y, const int map_w, const int map_h)
+{
+    switch (input) {
+        case TK_B:
+            *x = 10;
+            *y = 10;
+            *state = SCREEN_START;
+            break;
+        
+        case TK_I:
+            *mstate = MENU_INVENTORY;
+            break;
+        
+        case TK_K:
+            *mstate = MENU_SKILLS;
+            break;
+        
+        case TK_A:
+        case TK_LEFT:
+            if (*mstate == MENU_NONE) *x -= 1;
+            break;
+        
+        case TK_D:
+        case TK_RIGHT:
+            if (*mstate == MENU_NONE) *x += 1;
+            break;
+        
+        case TK_W:
+        case TK_UP:
+            if (*mstate == MENU_NONE) *y -= 1;
+            break;
+        
+        case TK_S:
+        case TK_DOWN:
+            if (*mstate == MENU_NONE) *y += 1;
+            break;
+        
+        default:
+            break;
+    }
+
+    // check player boundaries
+    if (*x < 0) *x = 0;
+    if (*x >= map_w) *x = map_w - 1;
+    if (*y < 0) *y = 0;
+    if (*y >= map_h) *y = map_h - 1;
+}
+
+
+// -------------------------
+// In-Game Menus
+// -------------------------
+void menu_inventory(int input, screen_state *state, menu_state *mstate)
+{
+    terminal_layer(LAYER_MAP);
+
+    terminal_print(20,  9, "+-------------------+");
+    terminal_print(20, 10, "| INVENTORY MENU    |");
+    terminal_print(20, 11, "| ================= |");
+    terminal_print(20, 12, "| [[1]] First item    |");
+    terminal_print(20, 13, "| [[2]] Second item   |");
+    terminal_print(20, 14, "|                   |");
+    terminal_print(20, 15, "| [[B]] Close         |");
+    terminal_print(20, 16, "+-------------------+");
+
+
+    menu_inventory_state(input, state, mstate);
+}
+
+void menu_inventory_state(int input, screen_state *state, menu_state *mstate)
+{
+    static int last_input = 0;
+
+    if (input == TK_1 || input == TK_2 || input == TK_B) last_input = input;
+
+    switch (last_input) {
+        case TK_1:
+            terminal_print(1, 1, "[color=green]Player used First Item [/color]");
+            break;
+        
+        case TK_2:
+            terminal_print(1, 1, "[color=red]Player used Second Item[/color]");
+            break;
+        
+        case TK_B:
+            last_input = 0;
+            *mstate = MENU_NONE;
+            break;
+
+        default:
+            break;
+    }
+}
+
+// -----
+
+void menu_skills(int input, screen_state *state, menu_state *mstate)
+{
+    terminal_layer(LAYER_MAP);
+
+    _window_full_frame_border_fancy();
+
+    int scol = 20;
+    int srow = 10;
+    int cstep = 27;
+    terminal_print(4, 4, "[[B]] Return to game");
+
+    terminal_print(scol, srow,   "Strength       [[11]]");
+    terminal_print(scol, srow+1, "Dexterity      [[11]]");
+    terminal_print(scol, srow+2, "Endurance      [[11]]");
+    terminal_print(scol, srow+3, "Charisma       [[11]]");
+    terminal_print(scol, srow+4, "Intelligence   [[11]]");
+
+    scol += cstep;
+
+    terminal_print(scol, srow,   "Survival       [[11]]");
+    terminal_print(scol, srow+1, "Investigation  [[11]]");
+    terminal_print(scol, srow+2, "Intimidation   [[11]]");
+    terminal_print(scol, srow+3, "Melee Combat   [[11]]");
+    terminal_print(scol, srow+4, "Subterfuge     [[11]]");
+
+    terminal_print((COLS_W-1)/2, (COLS_H-1)/2, "+");
+
+    menu_skills_state(input, state, mstate);
+}
+
+void menu_skills_state(int input, screen_state *state, menu_state *mstate)
+{
+    static int last_input = 0;
+
+    if (input == TK_1 || input == TK_2 || input == TK_B) last_input = input;
+
+    switch (last_input) {
+        case TK_B:
+            last_input = 0;
+            *mstate = MENU_NONE;
+            break;
+
+        default:
+            break;
+    }
+}
+EOT
+
+    ##
+    ##
+    cat >> $P_NAME/src/map.h <<EOT
+#pragma once
+
+char** map_make(int, int);
+void map_fill_single_char(char**, char);
+void map_fill_basic_dungeon(char**);
+EOT
+
+    ##
+    ##
+    cat >> $P_NAME/src/map.c <<EOT
+#include <stdlib.h>
+#include "config.h"
+#include "map.h"
+
+char** map_make(int size_w, int size_h)
+{
+    char *rows  = calloc(size_w * size_h, sizeof(float));
+    char **cols = malloc(size_w * sizeof(float*));
+
+    for (int i=0; i < size_w; ++i)
+    {
+        cols[i] = rows + i * size_h;
+    }
+
+    return cols;
+}
+
+void map_fill_single_char(char **map, char filler)
+{
+    for (int col=0; col < COLS_W; ++col) {
+        for (int row=0; row < COLS_H; ++row) {
+            map[col][row] = filler;
+        }
+    }
+}
+
+void map_fill_basic_dungeon(char **map)
+{
+    map_fill_single_char(map, '.');
+}
+
+EOT
+fi
+
+################## END ADITIONALS #####################
 
 echo -e "${BLUE}[${CYAN}!${BLUE}]${NC} All done :)\n"
 struct_summary

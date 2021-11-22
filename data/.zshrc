@@ -43,6 +43,9 @@ export PATH="$HOME/.emacs.d/bin:$PATH"
 export STEAM_COMPAT_CLIENT_INSTALL_PATH="$HOME/.steam/steam"
 export STEAM_COMPAT_DATA_PATH="$HOME/.proton"
 
+# Docker
+alias run_portal="docker run -d --name portal -p 80:80 -v /home/azrl/dev/maisa/artmed_portal:/var/www/html daquadra/artmed_portal"
+
 # aliases
 alias l='ls -lh --color=auto'
 alias ll='ls -lah --color=auto'
