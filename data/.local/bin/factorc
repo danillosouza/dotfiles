@@ -182,7 +182,7 @@ EOD
 ### BEARLIB-FULL
 elif [[ $P_MODE == "bearlib-full" ]]; then
     P_STDIO="false"
-    P_LIB="${P_LIB} -lBearLibTerminal"
+    P_LIB="${P_LIB} -lm -lBearLibTerminal"
     P_INC=`echo -e "${P_INC}#include <BearLibTerminal.h>\n"`
     read -r -d '' P_CODE << EOD
 #include <stdlib.h>
@@ -777,6 +777,10 @@ extern const int CELL_W;
 extern const int CELL_H;
 extern const int COLS_W;
 extern const int COLS_H;
+
+#define DEG2RAD 3.14159/180;
+#define MIN(x, y) ((x) > (y)) ? (y) : (x)
+#define MAX(x, y) ((x) > (y)) ? (x) : (y)
 EOT
 
     ##
@@ -814,6 +818,7 @@ void menu_inventory_state(int, screen_state*, menu_state*);
 
 void menu_skills(int, screen_state*, menu_state*);
 void menu_skills_state(int, screen_state*, menu_state*);
+
 EOT
 
     ##
@@ -829,7 +834,6 @@ EOT
 const int LAYER_MAP = 0;
 const int LAYER_PLAYER = 1;
 const int LAYER_GUI = 2;
-
 
 // -------------------------
 // Window Utilities
@@ -992,7 +996,7 @@ void new_game_screen(screen_state *state)
 {
     static int x=10, y=10;
     static menu_state mstate = MENU_NONE;
-    static char **map;
+    static Tile **map;
 
     // create the map with the double the size of the screen
     int map_w = COLS_W * 2;
@@ -1003,8 +1007,8 @@ void new_game_screen(screen_state *state)
         map_fill_basic_dungeon(map);
     }
 
-    const int PSIZE = 50;
-    char player[PSIZE];
+    // creating player tile
+    static Tile player_tile = { '@', "purple", "purple", true, false };
 
     // camera calculations
     bool restrictCameraToMap = false;
@@ -1022,6 +1026,9 @@ void new_game_screen(screen_state *state)
         }
     }
 
+    // fov calculation
+    map_fov(map, map_w, map_h, (x - offset_x), (y - offset_y), 10);
+
     // render map
     terminal_layer(LAYER_MAP);
     for (int col=0; col < map_w; ++col) {
@@ -1031,7 +1038,14 @@ void new_game_screen(screen_state *state)
                 && col+offset_x >= 0
                 && row+offset_y < map_h
                 && col+offset_x < map_w) {
-                terminal_printf(col, row, "[color=#333333]%c[/color]", map[col][row]);
+
+                if (map[col][row].in_fov) {
+                    terminal_printf(col, row, "[color=#%s]%c[/color]", map[col][row].color_on, map[col][row].sprite);
+                } else {
+                    (! map[col][row].hide_outside_fov)
+                        ? terminal_printf(col, row, "[color=#%s]%c[/color]", map[col][row].color_off, map[col][row].sprite)
+                        : terminal_print(col, row, " ");
+                }
             }
             else {
                 terminal_printf(col, row, " ");
@@ -1041,9 +1055,8 @@ void new_game_screen(screen_state *state)
     }
 
     // render player
-    snprintf(player, PSIZE, "[color=%s]%c[/color]", "purple", '@');
     terminal_layer(LAYER_MAP);
-    terminal_print((x - offset_x), (y - offset_y), player);
+    terminal_printf((x - offset_x), (y - offset_y), "[color=%s]%c[/color]", player_tile.color_on, player_tile.sprite);
 
     // render gui
     terminal_layer(LAYER_GUI);
@@ -1223,46 +1236,119 @@ EOT
     ##
     cat >> $P_NAME/src/map.h <<EOT
 #pragma once
+#include <stdbool.h>
 
-char** map_make(int, int);
-void map_fill_single_char(char**, char);
-void map_fill_basic_dungeon(char**);
+typedef struct Tile {
+    char sprite;
+    const char *color_on;
+    const char *color_off;
+    bool in_fov;
+    bool hide_outside_fov;
+} Tile;
+
+Tile tile_create(char sprite, const char *color_on, const char *color_off, bool fov_exclusive);
+Tile** map_make(int size_w, int size_h);
+
+void map_fill_basic_dungeon(Tile **map);
+void map_fov(Tile **map, int map_w, int map_h, int x, int y, int distance);
+
+void _map_fill_single_char(Tile **map, char filler);
+int _diagonal_distance(int x0, int y0, int x1, int y1);
+int _linear_interpolation(float start, float end, float ratio);
 EOT
 
     ##
     ##
     cat >> $P_NAME/src/map.c <<EOT
 #include <stdlib.h>
+#include <math.h>
 #include "config.h"
 #include "map.h"
 
-char** map_make(int size_w, int size_h)
+Tile tile_create(char sprite, const char *color_on, const char *color_off, bool fov_exclusive)
 {
-    char *rows  = calloc(size_w * size_h, sizeof(float));
-    char **cols = malloc(size_w * sizeof(float*));
+    Tile t = { sprite, color_on, color_off, false, fov_exclusive };
+    return t;
+}
+
+Tile** map_make(int size_w, int size_h)
+{
+    Tile *rows  = calloc(size_w * size_h, sizeof(Tile));
+    Tile **cols = malloc(size_w * sizeof(Tile*));
 
     for (int i=0; i < size_w; ++i)
     {
         cols[i] = rows + i * size_h;
+
+        for (int j = 0; j < size_h; j++) {
+            cols[i][j] = tile_create(' ', "008800", "333333", false);
+        }
     }
 
     return cols;
 }
 
-void map_fill_single_char(char **map, char filler)
+void map_fill_basic_dungeon(Tile **map)
 {
-    for (int col=0; col < COLS_W; ++col) {
-        for (int row=0; row < COLS_H; ++row) {
-            map[col][row] = filler;
+    _map_fill_single_char(map, '.');
+}
+
+void map_fov(Tile **map, int map_w, int map_h, int x, int y, int distance)
+{
+    // reset fov to all false
+    for (int i = 0; i < map_w; i++) {
+        for (int j = 0; j < map_h; j++) {
+            map[i][j].in_fov = false;
+        }
+    }
+
+    // loop 360 degrees arround target
+    for (int i = 0; i < 360; ++i) {
+        // create a line between target and current degree limits
+        float deg = i * DEG2RAD;
+        int tx = round(cos(deg) * distance) + x;
+        int ty = round(sin(deg) * distance) + y;
+
+        // line size
+        int ds = _diagonal_distance(x, y, tx, ty);
+
+        // trace the line with linear interpolation
+        for (int j = 0; j < ds; j++) {
+            int lx = _linear_interpolation(x, tx, j / (float)ds);
+            int ly = _linear_interpolation(y, ty, j / (float)ds);
+
+            // check if tile is in bounds
+            if (lx < 0 || lx > map_w) continue;
+            if (ly < 0 || ly > map_h) continue;
+
+            // flag the cell as in-bounds
+            map[lx][ly].in_fov = true;
         }
     }
 }
 
-void map_fill_basic_dungeon(char **map)
+// -- ---------------------------------------------
+
+void _map_fill_single_char(Tile **map, char filler)
 {
-    map_fill_single_char(map, '.');
+    for (int col=0; col < COLS_W; ++col) {
+        for (int row=0; row < COLS_H; ++row) {
+            map[col][row].sprite = filler;
+        }
+    }
 }
 
+int _diagonal_distance(int x0, int y0, int x1, int y1)
+{
+    int dx = abs(x1 - x0);
+    int dy = abs(y1 - y0);
+    return MAX(dx, dy);
+}
+
+int _linear_interpolation(float start, float end, float ratio)
+{
+    return start + ratio * (end - start);
+}
 EOT
 fi
 
