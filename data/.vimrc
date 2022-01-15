@@ -100,25 +100,27 @@ map Y y$
 " map <C-L> (redraw screen) to also turn off search highlighting until the next search
 nnoremap <C-L> :nohl<CR><C-L>
 
-" open nerdtree when no file is specified
-autocmd VimEnter * if !argc() | NERDTree | wincmd p | endif
-
-
 
 """"""""""""""""""""""""""""""""""""
 " Tweaks
 """"""""""""""""""""""""""""""""""""
 
+" open nerdtree when no file is specified
+autocmd VimEnter * if !argc() | NERDTree | wincmd p | endif
+
 " quits if NERDTree is the last and only buffer available
 autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
 
-
+" start NERDTree when Vim starts with a directory argument.
+autocmd StdinReadPre * let s:std_in=1
+autocmd VimEnter * if argc() == 1 && isdirectory(argv()[0]) && !exists('s:std_in') |
+    \ execute 'NERDTree' argv()[0] | wincmd p | enew | execute 'cd '.argv()[0] | endif
 
 """"""""""""""""""""""""""""""""""""
 " Colors
 """"""""""""""""""""""""""""""""""""
 
-colorscheme gruvbox
-set background=dark
+"colorscheme gruvbox
+"set background=dark
 set encoding=UTF-8
 set guifont=DroidSansMono\ Nerd\ Font\ 11

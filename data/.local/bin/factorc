@@ -244,7 +244,7 @@ EOD
 ### SDL
 elif [[ $P_MODE == "sdl" ]]; then
     P_STDIO="false"
-    P_LIB="${P_LIB} -lSDL2"
+    P_LIB="${P_LIB} -lSDL2main -lSDL2"
     P_INC=`echo -e "${P_INC}#include <SDL2/SDL.h>\n"`
     read -r -d '' P_CODE << EOD
 int main(int argc, char** argv)

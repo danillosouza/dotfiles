@@ -178,10 +178,72 @@ int main(int argc, char **argv)
 }
 EOD
 
+### BEARLIB-FULL
+elif [[ $P_MODE == "bearlib-full" ]]; then
+    P_IOSTREAM="false"
+    P_LIB="${P_LIB} -lm -lBearLibTerminal"
+    P_INC=`echo -e "${P_INC}#include <BearLibTerminal.h>\n"`
+    read -r -d '' P_CODE << EOD
+#include <stdlib.h>
+#include <BearLibTerminal.h>
+#include "config.h"
+#include "screens.h"
+
+const int WINDOW_W = 1280;
+const int WINDOW_H = 720;
+const int CELL_W = 8;
+const int CELL_H = 16;
+const int COLS_W = WINDOW_W  / CELL_W;
+const int COLS_H = WINDOW_H / CELL_H;
+
+int main(int argc, char **argv)
+{
+    // initialize bear terminal
+    terminal_open();
+
+    screen_state state = SCREEN_START;
+
+    // config terminal (enter fullscreen with alt + enter)
+    terminal_set("input.filter = [keyboard, mouse]");
+    terminal_set("input: precise-mouse=true, mouse-cursor=false");
+    terminal_setf("window: title='BearLib Demo', cellsize=%dx%d, size=%dx%d, resize-mode=fit, client-size=%dx%d",
+        CELL_W, CELL_H, (WINDOW_W / CELL_W), (WINDOW_H / CELL_H), WINDOW_W, WINDOW_H);
+
+    while (state != SCREEN_EXIT) {
+        terminal_clear();
+
+        // print title text
+        switch (state) {
+            case SCREEN_START:
+                main_screen(&state);
+                break;
+            
+            case SCREEN_NEW:
+                new_game_screen(&state);
+                break;
+            
+            case SCREEN_LOAD:
+                load_game_screen(&state);
+                break;
+            
+            case SCREEN_EXIT:
+                // on exit
+                break;
+        }
+
+        // update terminal
+        terminal_refresh();
+    }
+
+    // exit bear terminal
+    terminal_close();
+}
+EOD
+
 ### SDL
 elif [[ $P_MODE == "sdl" ]]; then
     P_IOSTREAM="false"
-    P_LIB="${P_LIB} -lSDL2"
+    P_LIB="${P_LIB} -lSDL2main -lSDL2"
     P_INC=`echo -e "${P_INC}#include <SDL2/SDL.h>\n"`
     read -r -d '' P_CODE << EOD
 int main(int argc, char **argv)
@@ -715,6 +777,595 @@ ${P_INC}
 
 ${P_CODE}
 EOT
+
+################## BEGIN ADITIONALS ###################
+
+if [[ $P_MODE == "bearlib-full" ]]; then
+    ##
+    ##
+    cat >> $P_NAME/src/config.h <<EOT
+${P_INC}
+#pragma once
+
+extern const int WINDOW_W;
+extern const int WINDOW_H;
+extern const int CELL_W;
+extern const int CELL_H;
+extern const int COLS_W;
+extern const int COLS_H;
+
+#define DEG2RAD 3.14159/180;
+#define MIN(x, y) ((x) > (y)) ? (y) : (x)
+#define MAX(x, y) ((x) > (y)) ? (x) : (y)
+EOT
+
+    ##
+    ##
+    cat >> $P_NAME/src/screens.h <<EOT
+#pragma once
+
+enum screen_state {
+    SCREEN_START,
+    SCREEN_NEW,
+    SCREEN_LOAD,
+    SCREEN_EXIT
+};
+
+enum menu_state {
+    MENU_NONE,
+    MENU_INVENTORY,
+    MENU_SKILLS
+};
+
+void _window_full_frame_border_simple(const char *);
+void _window_full_frame_border_fancy(void);
+
+void main_screen(screen_state*);
+void main_screen_state(screen_state*);
+
+void new_game_screen(screen_state*);
+void new_game_screen_state(int, screen_state*, menu_state*, int*, int*, const int, const int);
+
+void load_game_screen(screen_state*);
+void load_game_screen_state(screen_state*);
+
+void menu_inventory(int, screen_state*, menu_state*);
+void menu_inventory_state(int, screen_state*, menu_state*);
+
+void menu_skills(int, screen_state*, menu_state*);
+void menu_skills_state(int, screen_state*, menu_state*);
+
+EOT
+
+    ##
+    ##
+    cat >> $P_NAME/src/screens.cc <<EOT
+#include <BearLibTerminal.h>
+#include "config.h"
+#include "screens.h"
+#include "map.h"
+
+const int LAYER_MAP = 0;
+const int LAYER_PLAYER = 1;
+const int LAYER_GUI = 2;
+
+// -------------------------
+// Window Utilities
+// -------------------------
+void _window_full_frame_border_simple(const char *texture)
+{
+    terminal_clear();
+
+    for (int x=1; x < COLS_W-1; x++) {
+        terminal_print(x, 1, texture);
+        terminal_print(x, COLS_H-2, texture);
+    }
+
+    for (int y=1; y < COLS_H-1; y++) {
+        terminal_print(1, y, texture);
+        terminal_print(COLS_W-2, y, texture);
+    }
+}
+
+void _window_full_frame_border_fancy(void)
+{
+    terminal_clear();
+
+    for (int x=1; x < COLS_W-1; x++) {
+        terminal_print(x, 1, "═");
+        terminal_print(x, COLS_H-2, "═");
+    }
+
+    for (int y=1; y < COLS_H-1; y++) {
+        terminal_print(1, y, "║");
+        terminal_print(COLS_W-2, y, "║");
+    }
+
+    terminal_print(1, 1, "╔");
+    terminal_print(COLS_W-2, 1, "╗");
+    terminal_print(COLS_W-2, COLS_H-2, "╝");
+    terminal_print(1, COLS_H-2, "╚");
+}
+
+// -------------------------
+// Main Menu
+// -------------------------
+void main_screen(screen_state *state)
+{
+    terminal_layer(LAYER_GUI);
+    terminal_color(0xFF00FFFF);
+    terminal_bkcolor(0xFF151515);
+    terminal_print(1, 1, "[color=red]Hello[/color] c-bear-screens!");
+    terminal_print(1, 3, "[[N]]         New game");
+    terminal_print(1, 4, "[[L]]         Load game");
+    terminal_print(1, 5, "[[Alt+Enter]] Toggle fullscreen");
+    terminal_print(1, 7, "[[Ctrl+Q]]    Exit");
+
+    main_screen_state(state);
+}
+
+void main_screen_state(screen_state *state)
+{
+    static int mmoved=0, mx=0, my=0;
+    static int lclick=0, lx=0, ly=0;
+    static int rclick=0, rx=0, ry=0;
+
+    if (terminal_has_input()) {
+        switch (terminal_read()) {
+            case TK_Q:
+                if (terminal_state(TK_CONTROL)) {
+                    *state = SCREEN_EXIT;
+                }
+                break;
+            
+            case TK_N:
+                *state = SCREEN_NEW;
+                break;
+            
+            case TK_L:
+                *state = SCREEN_LOAD;
+                break;
+            
+            case TK_MOUSE_MOVE: {
+                mmoved = 1;
+                mx = terminal_state(TK_MOUSE_X);
+                my = terminal_state(TK_MOUSE_Y);
+                break;
+            }
+
+            case TK_MOUSE_LEFT: {
+                rclick = 0;
+                lclick = 1;
+
+                lx = terminal_state(TK_MOUSE_X);
+                ly = terminal_state(TK_MOUSE_Y);
+                break;
+            }
+
+            case TK_MOUSE_RIGHT: {
+                lclick = 0;
+                rclick = 1;
+
+                rx = terminal_state(TK_MOUSE_X);
+                ry = terminal_state(TK_MOUSE_Y);
+                break;
+            }
+
+            default:
+                break;
+        }
+    }
+
+    if (lclick) {
+        terminal_layer(LAYER_GUI);
+        terminal_printf(1, 11, "[color=cyan]Left click at:[/color] [color=pink]%d, %d[/color]", lx, ly);
+    } else if (rclick) {
+        terminal_layer(LAYER_GUI);
+        terminal_printf(1, 11, "[color=cyan]Right click at:[/color] [color=pink]%d, %d[/color]", rx, ry);
+    }
+
+    if (mmoved) {
+        terminal_layer(LAYER_GUI);
+        terminal_printf(1, 10, "[color=cyan]Mouse coordinates:[/color] [color=green]%d, %d[/color]", mx, my);
+        
+        terminal_layer(LAYER_MAP);
+        terminal_print(mx, my, "[color=red]█[/color]");
+    }
+}
+
+
+// -------------------------
+// Load Menu
+// -------------------------
+void load_game_screen(screen_state *state)
+{
+    terminal_color(0xFF00FFFF);
+    terminal_layer(0);
+    terminal_bkcolor(0xFF151515);
+    terminal_print(1, 1, "[color=red]Load[/color] new game!");
+    terminal_print(1, 3, "[[B]] Back to main screen");
+
+    load_game_screen_state(state);
+}
+
+void load_game_screen_state(screen_state *state)
+{
+    if (terminal_has_input()) {
+        switch (terminal_read()) {
+            case TK_B:
+                *state = SCREEN_START;
+                break;
+            
+            default:
+                break;
+        }
+    }
+}
+
+
+// -------------------------
+// Game Level
+// -------------------------
+void new_game_screen(screen_state *state)
+{
+    static int x=10, y=10;
+    static menu_state mstate = MENU_NONE;
+    static Tile **map;
+
+    // create the map with the double the size of the screen
+    int map_w = COLS_W * 2;
+    int map_h = COLS_H * 2; 
+
+    if (map == NULL) {
+        map = map_make(map_w, map_h);
+        map_fill_basic_dungeon(map);
+    }
+
+    // creating player tile
+    static Tile player_tile = { '@', "purple", "purple", true, false };
+
+    // camera calculations
+    bool restrictCameraToMap = false;
+    int offset_x = x - (COLS_W / 2);
+    int offset_y = y - (COLS_H / 2);
+
+    if (restrictCameraToMap) {
+        // only works if maps is at least the size of the screen
+        if (map_w >= COLS_W && map_h >= COLS_H) {
+            if (offset_x < 0) offset_x = 0;
+            if (offset_x > (map_w - COLS_W)) offset_x = map_w - COLS_W;
+
+            if (offset_y < 0) offset_y = 0;
+            if (offset_y > (map_h - COLS_H)) offset_y = map_h - COLS_H;
+        }
+    }
+
+    // fov calculation
+    map_fov(map, map_w, map_h, (x - offset_x), (y - offset_y), 10);
+
+    // render map
+    terminal_layer(LAYER_MAP);
+    for (int col=0; col < map_w; ++col) {
+        for (int row=0; row < map_h; ++row) {
+
+            if (row+offset_y >= 0
+                && col+offset_x >= 0
+                && row+offset_y < map_h
+                && col+offset_x < map_w) {
+
+                if (map[col][row].in_fov) {
+                    terminal_printf(col, row, "[color=#%s]%c[/color]", map[col][row].color_on, map[col][row].sprite);
+                } else {
+                    (! map[col][row].hide_outside_fov)
+                        ? terminal_printf(col, row, "[color=#%s]%c[/color]", map[col][row].color_off, map[col][row].sprite)
+                        : terminal_print(col, row, " ");
+                }
+            }
+            else {
+                terminal_printf(col, row, " ");
+            }
+
+        }
+    }
+
+    // render player
+    terminal_layer(LAYER_MAP);
+    terminal_printf((x - offset_x), (y - offset_y), "[color=%s]%c[/color]", player_tile.color_on, player_tile.sprite);
+
+    // render gui
+    terminal_layer(LAYER_GUI);
+    terminal_print(1, 2, "[[B]] Back to menu");
+    terminal_print(1, 3, "[[I]] Inventory");
+    terminal_print(1, 4, "[[K]] Skills");
+
+    // debug info
+    terminal_printf(1, 6, "Map Size [[W: %3d, W: %3d]]", map_w, map_h);
+    terminal_printf(1, 7, "Player   [[X: %3d, Y: %3d]]", x, y);
+    
+    int input = 0;
+    if (terminal_has_input()) {
+        input = terminal_read();
+    }
+
+    switch (mstate) {
+        case MENU_INVENTORY:
+            menu_inventory(input, state, &mstate);
+            break;
+        
+        case MENU_SKILLS:
+            menu_skills(input, state, &mstate);
+            break;
+        
+        default:
+            new_game_screen_state(input, state, &mstate, &x, &y, map_w, map_h);
+            break;
+    }
+}
+
+void new_game_screen_state(int input, screen_state *state, menu_state *mstate, int *x, int *y, const int map_w, const int map_h)
+{
+    switch (input) {
+        case TK_B:
+            *x = 10;
+            *y = 10;
+            *state = SCREEN_START;
+            break;
+        
+        case TK_I:
+            *mstate = MENU_INVENTORY;
+            break;
+        
+        case TK_K:
+            *mstate = MENU_SKILLS;
+            break;
+        
+        case TK_A:
+        case TK_LEFT:
+            if (*mstate == MENU_NONE) *x -= 1;
+            break;
+        
+        case TK_D:
+        case TK_RIGHT:
+            if (*mstate == MENU_NONE) *x += 1;
+            break;
+        
+        case TK_W:
+        case TK_UP:
+            if (*mstate == MENU_NONE) *y -= 1;
+            break;
+        
+        case TK_S:
+        case TK_DOWN:
+            if (*mstate == MENU_NONE) *y += 1;
+            break;
+        
+        default:
+            break;
+    }
+
+    // check player boundaries
+    if (*x < 0) *x = 0;
+    if (*x >= map_w) *x = map_w - 1;
+    if (*y < 0) *y = 0;
+    if (*y >= map_h) *y = map_h - 1;
+}
+
+
+// -------------------------
+// In-Game Menus
+// -------------------------
+void menu_inventory(int input, screen_state *state, menu_state *mstate)
+{
+    terminal_layer(LAYER_MAP);
+
+    terminal_print(20,  9, "+-------------------+");
+    terminal_print(20, 10, "| INVENTORY MENU    |");
+    terminal_print(20, 11, "| ================= |");
+    terminal_print(20, 12, "| [[1]] First item    |");
+    terminal_print(20, 13, "| [[2]] Second item   |");
+    terminal_print(20, 14, "|                   |");
+    terminal_print(20, 15, "| [[B]] Close         |");
+    terminal_print(20, 16, "+-------------------+");
+
+
+    menu_inventory_state(input, state, mstate);
+}
+
+void menu_inventory_state(int input, screen_state *state, menu_state *mstate)
+{
+    static int last_input = 0;
+
+    if (input == TK_1 || input == TK_2 || input == TK_B) last_input = input;
+
+    switch (last_input) {
+        case TK_1:
+            terminal_print(1, 1, "[color=green]Player used First Item [/color]");
+            break;
+        
+        case TK_2:
+            terminal_print(1, 1, "[color=red]Player used Second Item[/color]");
+            break;
+        
+        case TK_B:
+            last_input = 0;
+            *mstate = MENU_NONE;
+            break;
+
+        default:
+            break;
+    }
+}
+
+// -----
+
+void menu_skills(int input, screen_state *state, menu_state *mstate)
+{
+    terminal_layer(LAYER_MAP);
+
+    _window_full_frame_border_fancy();
+
+    int scol = 20;
+    int srow = 10;
+    int cstep = 27;
+    terminal_print(4, 4, "[[B]] Return to game");
+
+    terminal_print(scol, srow,   "Strength       [[11]]");
+    terminal_print(scol, srow+1, "Dexterity      [[11]]");
+    terminal_print(scol, srow+2, "Endurance      [[11]]");
+    terminal_print(scol, srow+3, "Charisma       [[11]]");
+    terminal_print(scol, srow+4, "Intelligence   [[11]]");
+
+    scol += cstep;
+
+    terminal_print(scol, srow,   "Survival       [[11]]");
+    terminal_print(scol, srow+1, "Investigation  [[11]]");
+    terminal_print(scol, srow+2, "Intimidation   [[11]]");
+    terminal_print(scol, srow+3, "Melee Combat   [[11]]");
+    terminal_print(scol, srow+4, "Subterfuge     [[11]]");
+
+    terminal_print((COLS_W-1)/2, (COLS_H-1)/2, "+");
+
+    menu_skills_state(input, state, mstate);
+}
+
+void menu_skills_state(int input, screen_state *state, menu_state *mstate)
+{
+    static int last_input = 0;
+
+    if (input == TK_1 || input == TK_2 || input == TK_B) last_input = input;
+
+    switch (last_input) {
+        case TK_B:
+            last_input = 0;
+            *mstate = MENU_NONE;
+            break;
+
+        default:
+            break;
+    }
+}
+EOT
+
+    ##
+    ##
+    cat >> $P_NAME/src/map.h <<EOT
+#pragma once
+
+struct Tile {
+    char sprite;
+    const char *color_on;
+    const char *color_off;
+    bool in_fov;
+    bool hide_outside_fov;
+};
+
+Tile tile_create(char sprite, const char *color_on, const char *color_off, bool fov_exclusive);
+Tile** map_make(int size_w, int size_h);
+
+void map_fill_basic_dungeon(Tile **map);
+void map_fov(Tile **map, int map_w, int map_h, int x, int y, int distance);
+
+void _map_fill_single_char(Tile **map, char filler);
+int _diagonal_distance(int x0, int y0, int x1, int y1);
+int _linear_interpolation(float start, float end, float ratio);
+EOT
+
+    ##
+    ##
+    cat >> $P_NAME/src/map.cc <<EOT
+#include <memory>
+#include <cmath>
+#include "config.h"
+#include "map.h"
+
+Tile tile_create(char sprite, const char *color_on, const char *color_off, bool fov_exclusive)
+{
+    Tile t = { sprite, color_on, color_off, false, fov_exclusive };
+    return t;
+}
+
+Tile** map_make(int size_w, int size_h)
+{
+    Tile *rows  = (Tile*) calloc(size_w * size_h, sizeof(Tile));
+    Tile **cols = (Tile**) malloc(size_w * sizeof(Tile*));
+
+    for (int i=0; i < size_w; ++i)
+    {
+        cols[i] = rows + i * size_h;
+
+        for (int j = 0; j < size_h; j++) {
+            cols[i][j] = tile_create(' ', "008800", "333333", false);
+        }
+    }
+
+    return cols;
+}
+
+void map_fill_basic_dungeon(Tile **map)
+{
+    _map_fill_single_char(map, '.');
+}
+
+void map_fov(Tile **map, int map_w, int map_h, int x, int y, int distance)
+{
+    // reset fov to all false
+    for (int i = 0; i < map_w; i++) {
+        for (int j = 0; j < map_h; j++) {
+            map[i][j].in_fov = false;
+        }
+    }
+
+    // loop 360 degrees arround target
+    for (int i = 0; i < 360; ++i) {
+        // create a line between target and current degree limits
+        float deg = i * DEG2RAD;
+        int tx = round(cos(deg) * distance) + x;
+        int ty = round(sin(deg) * distance) + y;
+
+        // line size
+        int ds = _diagonal_distance(x, y, tx, ty);
+
+        // trace the line with linear interpolation
+        for (int j = 0; j < ds; j++) {
+            int lx = _linear_interpolation(x, tx, j / (float)ds);
+            int ly = _linear_interpolation(y, ty, j / (float)ds);
+
+            // check if tile is in bounds
+            if (lx < 0 || lx > map_w) continue;
+            if (ly < 0 || ly > map_h) continue;
+
+            // flag the cell as in-bounds
+            map[lx][ly].in_fov = true;
+        }
+    }
+}
+
+// -- ---------------------------------------------
+
+void _map_fill_single_char(Tile **map, char filler)
+{
+    for (int col=0; col < COLS_W; ++col) {
+        for (int row=0; row < COLS_H; ++row) {
+            map[col][row].sprite = filler;
+        }
+    }
+}
+
+int _diagonal_distance(int x0, int y0, int x1, int y1)
+{
+    int dx = abs(x1 - x0);
+    int dy = abs(y1 - y0);
+    return MAX(dx, dy);
+}
+
+int _linear_interpolation(float start, float end, float ratio)
+{
+    return start + ratio * (end - start);
+}
+EOT
+fi
+
+################## END ADITIONALS #####################
 
 echo -e "${BLUE}[${CYAN}!${BLUE}]${NC} All done :)\n"
 struct_summary
