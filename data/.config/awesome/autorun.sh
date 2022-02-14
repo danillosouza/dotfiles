@@ -34,7 +34,7 @@ run thunar --daemon
 run pa-applet
 run pamac-tray
 # blueman-applet and msm_notifier are not installed in minimal edition
-run blueman-applet
+# run blueman-applet
 run msm_notifier
 
 # multimonitor and retore wallpapers

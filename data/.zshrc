@@ -18,9 +18,6 @@ eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
 #export CTRULIB="$DEVKITPRO/libctru"
 #export PATH="$PATH:$DEVKITARM/bin"
 
-# clion
-export PATH="$PATH:$HOME/.clion/bin"
-
 # go lang
 export PATH="$PATH:/usr/local/go/bin"
 export PATH="$PATH:$HOME/go/bin"
@@ -57,8 +54,8 @@ export STEAM_COMPAT_DATA_PATH="$HOME/.proton"
 alias run_portal="docker run -d --name portal -p 80:80 -v /home/azrl/dev/maisa/artmed_portal:/var/www/html daquadra/artmed_portal"
 
 # aliases
-alias l='ls -lh --color=auto'
-alias ll='ls -lah --color=auto'
+alias l='ls -lh --color=auto --group-directories-first'
+alias ll='ls -lah --color=auto --group-directories-first'
 
 # alias php='php7'
 
@@ -86,11 +83,27 @@ alias minecraft="flatpak run com.teamshiginima.ShiginimaLauncher"
 alias dfortress="exec /home/azrl/media/games/linux/dwarf_fortress/linux_lnp/LinuxLNP-0.43.05-r07/startlnp"
 alias ts4="proton run \"$PROTONPREFIX/drive_c/Games/The Sims 4/Game/Bin/TS4_x64.exe\""
 # alias riot="proton run $LOLCLIENT"
-alias riot="WINEPREFIX=$WINELOLPREFIX /opt/wine-lol/bin/wine \"$LOLCLIENT\""
+# alias riot="WINEPREFIX=$WINELOLPREFIX /opt/wine-lol/bin/wine \"$LOLCLIENT\""
 
 # Proton Aliases
 alias rexpaint="proton run $HOME/.proton/pfx/drive_c/Tools/REXPaint-v1.60/REXPaint.exe"
 alias rpaex="proton run $HOME/.proton/pfx/drive_c/Tools/RPAEx/rpaExtract.exe"
 alias daz3d="proton run $HOME/.proton/pfx/drive_c/Program\ Files/DAZ\ 3D/DazCentral1/DazCentral.exe"
 alias emu8086="proton run $HOME/.proton/pfx/drive_c/emu8086/emu8086.exe"
+
+
+# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+__conda_setup="$('/home/azrl/.anaconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f "/home/azrl/.anaconda3/etc/profile.d/conda.sh" ]; then
+        . "/home/azrl/.anaconda3/etc/profile.d/conda.sh"
+    else
+        export PATH="/home/azrl/.anaconda3/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+# <<< conda initialize <<<
 
