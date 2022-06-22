@@ -10,14 +10,14 @@ P_NAME=$1
 P_MODE=$2
 P_DEMONAME=$P_NAME
 G_NAME="FactorC"
-G_VERSION="v0.6.0"
+G_VERSION="v0.6.2"
 
 struct_summary()
 {
     echo -e "\t${CYAN}./${P_DEMONAME}/${NC}"
     echo -e "\t├── ${CYAN}bin/${NC}"
     echo -e "\t│   └── ${CYAN}${P_DEMONAME}${NC}"
-    echo -e "\t├── ${CYAN}build/${NC}"
+    echo -e "\t├── ${CYAN}cmake/${NC}"
     echo -e "\t├── ${CYAN}docs/${NC}"
     echo -e "\t│   └── ${P_DEMONAME}"
     echo -e "\t├── ${CYAN}include/${NC}"
@@ -30,13 +30,12 @@ struct_summary()
     echo -e "\t├── CMakeLists.txt"
     echo -e "\t├── CMP.cmake"
     echo -e "\t├── cotire.cmake"
+    echo -e "\t├── ${BLUE}build${NC}"
     echo -e "\t└── README.md"
     echo -e "\n\n"
     echo -e "\tBuild and run the project with the following commands:"
-    echo -e "\t${CYAN}\$ cd ./${P_DEMONAME}/build${NC}"
-    echo -e "\t${CYAN}\$ cmake ..${NC}"
-    echo -e "\t${CYAN}\$ make${NC}"
-    echo -e "\t${CYAN}\$ make run${NC}"
+    echo -e "\t${CYAN}\$ cd ./${P_DEMONAME}${NC}"
+    echo -e "\t${CYAN}\$ ./build [run]${NC}"
 }
 
 usage()
@@ -81,7 +80,7 @@ echo "${BLUE}[${CYAN}+${BLUE}]${NC} Project: $P_NAME"
 # creating project directory structure
 echo "${BLUE}[${CYAN}+${BLUE}]${NC} Creating directory structure..."
 [ -d "$P_NAME" ] && duplicated
-mkdir -p $P_NAME/bin $P_NAME/build $P_NAME/docs $P_NAME/include $P_NAME/vendors $P_NAME/source/$P_NAME
+mkdir -p $P_NAME/bin $P_NAME/cmake $P_NAME/docs $P_NAME/include $P_NAME/vendors $P_NAME/source/$P_NAME
 
 
 ## ===================================================================
@@ -107,6 +106,11 @@ EOD
 
     ## TEMPLATE
     read -r -d '' SRC_TEMPLATE << EOD
+i32 main(i32 argc, char** argv)
+{
+    printf("Project ${P_NAME} built with ${G_NAME} ${G_VERSION}...\n");
+    return 0;
+}
 EOD
 fi
 
@@ -581,16 +585,6 @@ fi
 
 ##
 ## source/<project>/main.c
-if [[ $SRC_TEMPLATE == "" ]]; then
-    read -r -d '' SRC_TEMPLATE << EOD
-i32 main(i32 argc, char** argv)
-{
-    printf("Project ${P_NAME} built with ${G_NAME} ${G_VERSION}...\n");
-    return 0;
-}
-EOD
-fi
-
 echo "${BLUE}[${CYAN}+${BLUE}]${NC} Creating ${CYAN}source/$P_NAME/main.c${NC}"
 cat >> $P_NAME/source/$P_NAME/main.c <<EOT
 #include "pch.h"
@@ -787,6 +781,10 @@ ${BUILD_CONF}
 ## ====================================================
 
 
+## copy resources to the exec directory
+#file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+
+
 ##
 ## Creating precompiled headers
 set_target_properties(\${EXEC_NAME} PROPERTIES COTIRE_CXX_PREFIX_HEADER_INIT "\${CMAKE_CURRENT_SOURCE_DIR}/include/pch.h")
@@ -794,18 +792,9 @@ cotire(\${EXEC_NAME})
 
 
 ##
-## Create a run.sh script
-set(SHELL /bin/zsh)
-set(RUNSCRIPT \${CMAKE_CURRENT_SOURCE_DIR}/run.sh)
-file(WRITE \${RUNSCRIPT} "#!\${SHELL}\n")
-file(APPEND \${RUNSCRIPT} "cd \$(dirname \"\$0\")/bin\n")
-file(APPEND \${RUNSCRIPT} "./\${EXEC_NAME}\n")
-
-
-##
 ## Add 'make run' command
 add_custom_target(run
-    COMMAND chmod +x \${CMAKE_CURRENT_SOURCE_DIR}/run.sh && \${CMAKE_CURRENT_SOURCE_DIR}/run.sh
+    COMMAND \${CMAKE_CURRENT_SOURCE_DIR}/run.sh
     DEPENDS \${CMAKE_CURRENT_SOURCE_DIR}/bin/\${EXEC_NAME}
     WORKING_DIRECTORY \${CMAKE_PROJECT_DIR}
 )
@@ -850,6 +839,26 @@ endif()
 include(\${CPM_DOWNLOAD_LOCATION})
 EOT
 fi
+
+
+##
+## Build script on the root dir
+echo "${BLUE}[${CYAN}+${BLUE}]${NC} Creating ${CYAN}build${NC} tool ${BLUE}($ ./build [run])${NC}"
+cat >> $P_NAME/build <<EOT
+#!/bin/zsh
+
+ARG=\$1
+
+cd \$(dirname "\$0")/cmake
+cmake ..
+make
+
+if [[ \$ARG == "run" ]]; then
+    cd ../bin
+    exec "./${P_NAME}"
+fi
+EOT
+chmod +x $P_NAME/build
 
 
 ##

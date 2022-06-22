@@ -41,5 +41,14 @@ run msm_notifier
 multimon.sh
 nitrogen --restore &
 
+# launch cherrytree
+cherrytree &
+
 # do not shut off screen when idle
 xset -dpms s off
+
+# setup APL keyboard configuration
+# setxkbmap -layout br,apl -variant ,dyalog -option grp:lswitch
+
+# launch emacs daemon
+emacs --daemon
