@@ -269,6 +269,7 @@ pgadmin4
 php-fpm
 picasso
 picom
+pipes.sh
 pkgconf
 postgresql
 postgresql-libs

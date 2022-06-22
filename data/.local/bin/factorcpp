@@ -652,7 +652,7 @@ EOT
 echo "${BLUE}[${CYAN}+${BLUE}]${NC} Creating ${CYAN}.gitignore${NC}"
 cat >> $P_NAME/.gitignore <<EOT
 .vscode/
-build/*
+cmake/*
 bin/*
 *.sh
 EOT
@@ -734,7 +734,22 @@ set_target_properties(\${EXEC_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY "\${CMAK
 ## EXTERNAL DEPENDENCIES
 ## ====================================================
 
+
 ${BUILD_CONF}
+
+
+##
+## Add dependencies via `pkg-config`
+#find_package(PkgConfig)
+#if (PKG_CONFIG_FOUND)
+#    pkg_check_modules(XFT "xft")
+#
+#    if (XFT_FOUND)
+#        add_definitions(${XFT_CFLAGS} ${XFT_CFLAGS_OTHER})
+#    endif()
+#endif()
+#target_link_libraries(${EXEC_NAME} PUBLIC ${XFT_LIBRARIES})
+
 
 ##
 ## Build static library and link it to the executable
@@ -823,7 +838,7 @@ add_custom_target(run
 ##
 ## Add 'make clear' command
 add_custom_target(clear
-    COMMAND rm -Rf \${CMAKE_CURRENT_SOURCE_DIR}/bin/* \${CMAKE_CURRENT_SOURCE_DIR}/build/* \${CMAKE_CURRENT_SOURCE_DIR}/*.sh
+    COMMAND rm -Rf \${CMAKE_CURRENT_SOURCE_DIR}/bin/* \${CMAKE_CURRENT_SOURCE_DIR}/cmake/* \${CMAKE_CURRENT_SOURCE_DIR}/*.sh
     WORKING_DIRECTORY \${CMAKE_PROJECT_DIR}
 )
 EOT
@@ -868,15 +883,18 @@ cat >> $P_NAME/build <<EOT
 #!/bin/zsh
 
 ARG=\$1
+BINARY="${P_NAME}"
+ROOT_DIR="\${0:a:h}"
+BUILD_DIR="\$ROOT_DIR/cmake"
+DIST_DIR="\$ROOT_DIR/bin"
 
-cd \$(dirname "\$0")/cmake
+cd "\$BUILD_DIR"
 cmake ..
 make
 
-if [[ \$ARG == "run" ]]; then
-    cd ../bin
-    exec "./${P_NAME}"
-fi
+cd "\$ROOT_DIR"; echo"";
+if [[ \$ARG == "run" ]] exec "\$DIST_DIR/\$BINARY"
+if [[ \$ARG == "dbg" ]] gdb "\$DIST_DIR/\$BINARY"
 EOT
 chmod +x $P_NAME/build
 
