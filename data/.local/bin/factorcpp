@@ -894,7 +894,7 @@ make
 
 cd "\$ROOT_DIR"; echo"";
 if [[ \$ARG == "run" ]] exec "\$DIST_DIR/\$BINARY"
-if [[ \$ARG == "dbg" ]] gdb "\$DIST_DIR/\$BINARY"
+if [[ \$ARG == "dbg" || \$ARG == "gdb" ]] gdb "\$DIST_DIR/\$BINARY"
 EOT
 chmod +x $P_NAME/build
 
