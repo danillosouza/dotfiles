@@ -40,6 +40,8 @@ pack()
     cp -f $HOME/.zshrc $DOTSDIR/.zshrc && echo "${EPREFIX} .zshrc"
 
     echo -e "\n${RED}--- PACKING ${HOME}/.local/bin ---${NC}\n"
+    cp -f $HOME/.local/bin/blankc $DOTSDIR/.local/bin/blankc && echo "${EPREFIX} blankc"
+    cp -f $HOME/.local/bin/blankcpp $DOTSDIR/.local/bin/blankcpp && echo "${EPREFIX} blankcpp"
     cp -f $HOME/.local/bin/factorcpp $DOTSDIR/.local/bin/factorcpp && echo "${EPREFIX} factorcpp"
     cp -f $HOME/.local/bin/factorc $DOTSDIR/.local/bin/factorc && echo "${EPREFIX} factorc"
     cp -f $HOME/.local/bin/factorj $DOTSDIR/.local/bin/factorj && echo "${EPREFIX} factorj"
@@ -78,6 +80,8 @@ unpack()
     [[ -f $DOTSDIR/.zshrc ]] && cp -f $DOTSDIR/.zshrc $HOME/.zshrc && echo "${EPREFIX} .zshrc"
 
     echo -e "\n${RED}--- UNPACKING ${HOME}/.local/bin ---${NC}\n"
+    [[ -f $DOTSDIR/.local/bin/blankc ]] && cp -f $DOTSDIR/.local/bin/blankc $HOME/.local/bin/blankc && chmod +x $HOME/.local/bin/blankc && echo "${EPREFIX} blankc"
+    [[ -f $DOTSDIR/.local/bin/blankcpp ]] && cp -f $DOTSDIR/.local/bin/blankcpp $HOME/.local/bin/blankcpp && chmod +x $HOME/.local/bin/blankcpp && echo "${EPREFIX} blankcpp"
     [[ -f $DOTSDIR/.local/bin/factorcpp ]] && cp -f $DOTSDIR/.local/bin/factorcpp $HOME/.local/bin/factorcpp && chmod +x $HOME/.local/bin/factorcpp && echo "${EPREFIX} factorcpp"
     [[ -f $DOTSDIR/.local/bin/factorc ]] && cp -f $DOTSDIR/.local/bin/factorc $HOME/.local/bin/factorc && chmod +x $HOME/.local/bin/factorc && echo "${EPREFIX} factorc"
     [[ -f $DOTSDIR/.local/bin/factorj ]] && cp -f $DOTSDIR/.local/bin/factorj $HOME/.local/bin/factorj && chmod +x $HOME/.local/bin/factorj && echo "${EPREFIX} factorj"
