@@ -38,6 +38,7 @@ pack()
     cp -TRf $HOME/.vim $DOTSDIR/.vim   && echo "${EPREFIX} .vim"
     cp -f $HOME/.vimrc $DOTSDIR/.vimrc && echo "${EPREFIX} .vimrc"
     cp -f $HOME/.zshrc $DOTSDIR/.zshrc && echo "${EPREFIX} .zshrc"
+    cp -f $HOME/dev/Doxyfile-template $DOTSDIR/dev/Doxyfile-template && echo "${EPREFIX} dev/Doxyfile-template"
 
     echo -e "\n${RED}--- PACKING ${HOME}/.local/bin ---${NC}\n"
     cp -f $HOME/.local/bin/blankc $DOTSDIR/.local/bin/blankc && echo "${EPREFIX} blankc"
@@ -78,6 +79,7 @@ unpack()
     [[ -d $DOTSDIR/.vim ]]   && cp -TRf $DOTSDIR/.vim $HOME/.vim   && echo "${EPREFIX} .vim"
     [[ -f $DOTSDIR/.vimrc ]] && cp -f $DOTSDIR/.vimrc $HOME/.vimrc && echo "${EPREFIX} .vimrc"
     [[ -f $DOTSDIR/.zshrc ]] && cp -f $DOTSDIR/.zshrc $HOME/.zshrc && echo "${EPREFIX} .zshrc"
+    [[ -f $DOTSDIR/dev/Doxyfile-template ]] && cp -f $DOTSDIR/dev/Doxyfile-template $HOME/dev/Doxyfile-template && echo "${EPREFIX} dev/Doxyfile-template"
 
     echo -e "\n${RED}--- UNPACKING ${HOME}/.local/bin ---${NC}\n"
     [[ -f $DOTSDIR/.local/bin/blankc ]] && cp -f $DOTSDIR/.local/bin/blankc $HOME/.local/bin/blankc && chmod +x $HOME/.local/bin/blankc && echo "${EPREFIX} blankc"
