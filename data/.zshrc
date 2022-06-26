@@ -28,6 +28,9 @@ fi
 unset __conda_setup
 # <<< conda initialize <<<
 
+# vcpkg
+export PATH="$HOME/dev/vcpkg:$PATH"
+
 # Perl local::lib
 eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
 
