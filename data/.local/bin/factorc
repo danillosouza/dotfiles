@@ -110,9 +110,9 @@ EOD
 /*! 
  *  \brief     Entrypoint of the application.
  *  \details   This function is used to demonstrate display a simple message.
- *  \author    Danillo Souza
+ *  \author    $USER
  *  \version   0.1a
- *  \date      2022-06-26
+ *  \date      $(date +"%Y-%m-%d")
  *  \pre       Nothing.
  *  \bug       If there was something wrong, it would be described here.
  *  \warning   You should fill it with some useful code.
@@ -158,9 +158,9 @@ void wait_millis(i32 ms) { usleep(ms * 1000); }
 /*! 
  *  \brief     Entrypoint of the application.
  *  \details   This function is used to demonstrate display a simple message.
- *  \author    Danillo Souza
+ *  \author    $USER
  *  \version   0.1a
- *  \date      2022-06-26
+ *  \date      $(date +"%Y-%m-%d")
  *  \pre       Nothing.
  *  \bug       If there was something wrong, it would be described here.
  *  \warning   You should fill it with some useful code.
@@ -240,9 +240,9 @@ const u32 CELL_H = 16;
 /*! 
  *  \brief     Entrypoint of the application.
  *  \details   This function is used to demonstrate display a simple message.
- *  \author    Danillo Souza
+ *  \author    $USER
  *  \version   0.1a
- *  \date      2022-06-26
+ *  \date      $(date +"%Y-%m-%d")
  *  \pre       Nothing.
  *  \bug       If there was something wrong, it would be described here.
  *  \warning   You should fill it with some useful code.
@@ -255,7 +255,7 @@ i32 main(i32 argc, char **argv)
 
     // config terminal (enter fullscreen with alt + enter)
     terminal_set("input: precise-mouse=true, mouse-cursor=false");
-    terminal_setf("window: title='${P_NAME}', cellsize=%dx%d, size=%dx%d, resize-mode=fit, client-size=%dx%d",
+    terminal_setf("window: title='${P_NAME}', cellsize=%dx%d, size=%dx%d, resizeable=true, resize-mode=fit, client-size=%dx%d",
         CELL_W, CELL_H, (WINDOW_W / CELL_W), (WINDOW_H / CELL_H), WINDOW_W, WINDOW_H);
     
     // configure fg & bg colors
@@ -265,18 +265,38 @@ i32 main(i32 argc, char **argv)
     // wait until user close the window by pressing 'q'
     u16 key;
     bool running = true;
+    wchar_t input[128] = L"";
+
     while (running) {
         terminal_clear();
 
         // print title text
-        terminal_print(1, 1, "[color=red]Hello[/color] ${P_NAME}!");
+        terminal_print(1, 1, "[color=red]Hello[/color] bear-demo!");
 
+        i32 term_w = terminal_state(TK_WIDTH),      term_h = terminal_state(TK_HEIGHT);
+        i32 cell_w = terminal_state(TK_CELL_WIDTH), cell_h = terminal_state(TK_CELL_HEIGHT);
+        terminal_printf(1, 2, "Term size: %dx%d (%dx%d)", term_w, term_h, term_w*cell_w, term_h*cell_h);
+        terminal_printf(1, 3, "Cell size: %dx%d", cell_w, cell_h);
+
+        terminal_put(term_w/2, term_h/2, '@');
+
+        if (wcslen(input) > 0) {
+            terminal_printf(1, 5, "Last command: %ls", input);
+        }
+
+        // process input
         if (terminal_has_input()) {
             key = terminal_read();
 
             switch (key) {
                 case TK_Q:
                     running = false;
+                    break;
+                
+                case TK_R:
+                    input[0] = '\0';
+                    terminal_print(1, term_h-1, ">> ");
+                    terminal_read_wstr(4, term_h-1, input, sizeof(input)-1);
                     break;
                 
                 default:
@@ -322,9 +342,9 @@ EOD
 /*! 
  *  \brief     Entrypoint of the application.
  *  \details   This function is used to demonstrate display a simple message.
- *  \author    Danillo Souza
+ *  \author    $USER
  *  \version   0.1a
- *  \date      2022-06-26
+ *  \date      $(date +"%Y-%m-%d")
  *  \pre       Nothing.
  *  \bug       If there was something wrong, it would be described here.
  *  \warning   You should fill it with some useful code.
@@ -468,9 +488,9 @@ void processInput(GLFWwindow *window)
 /*! 
  *  \brief     Entrypoint of the application.
  *  \details   This function is used to demonstrate display a simple message.
- *  \author    Danillo Souza
+ *  \author    $USER
  *  \version   0.1a
- *  \date      2022-06-26
+ *  \date      $(date +"%Y-%m-%d")
  *  \pre       Nothing.
  *  \bug       If there was something wrong, it would be described here.
  *  \warning   You should fill it with some useful code.
