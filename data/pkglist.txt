@@ -1,6 +1,7 @@
 3ds-cmake
 3ds-examples
 3ds-pkg-config
+3ds-sdl
 3dslink
 3dstools
 accountsservice
@@ -12,6 +13,7 @@ adobe-source-han-sans-otc-fonts
 alacritty
 amd-ucode
 amfora
+android-studio
 android-tools
 angband-ncurses
 antimicrox
@@ -22,9 +24,12 @@ aspell
 audacity
 autoconf
 automake
+aws-cli
 b43-fwcutter
 baobab
 bash
+bat
+bcompare
 bearlibterminal-git
 binutils
 bison
@@ -41,6 +46,7 @@ calibre
 cataclysm-dda
 cataclysm-dda-tiles
 ccls
+cereal
 cherrytree
 chromium
 citra-git
@@ -48,8 +54,8 @@ citra-qt-git
 citro2d
 citro3d
 clang
-clisp
 cmatrix
+cool-retro-term
 coreutils
 cpanminus
 cpupower
@@ -78,11 +84,13 @@ drogon
 dwarffortress
 dwarffortress-terminal-fonts
 dyalog-bin
+dynamodb
 e2fsprogs
 easytag
 ecryptfs-utils
 efibootmgr
 emacs
+emote
 entt
 evtest
 exfat-utils
@@ -118,9 +126,7 @@ glibc
 glm
 gnome-themes-extra
 gnutls28
-golly
 google-chrome
-gotop
 gparted
 gradle6
 grep
@@ -156,6 +162,7 @@ jre8-openjdk
 jre8-openjdk-headless
 kleopatra
 krita
+kvantum
 laptop-mode-tools
 less
 lib32-gconf
@@ -175,6 +182,7 @@ liberal-crime-squad-svn
 libgmp-static
 libheif
 libreoffice-fresh
+libtcod-git
 libtool
 liburcu
 libva-mesa-driver
@@ -222,7 +230,6 @@ mono-msbuild
 mousepad
 msmtp
 msmtp-mta
-musikcube
 nano
 nasm
 ncurses5-compat-libs
@@ -246,6 +253,7 @@ npm
 ntfs-3g
 nvm
 obs-studio
+obsidian
 okular
 oniguruma
 open-cobol
@@ -260,13 +268,14 @@ otf-ipafont
 outguess
 pacman
 pamac-gtk
+pandoc
 pass
 patch
 pavucontrol
 pciutils
 perl
 pgadmin4
-php-fpm
+php7
 picasso
 picom
 pipes.sh
@@ -284,6 +293,7 @@ pulseaudio-bluetooth
 pureref
 pypy3
 pypy3-virtualenv
+pyroom
 python-pip
 python-pytorch
 python-virtualenv
@@ -294,10 +304,12 @@ re2c
 reiserfsprogs
 renpy
 ripgrep
+rlwrap
 rogue
 rsync
-rust-analyzer
+rust-racer
 rust-src
+rusty-man
 s-nail
 sbcl
 scrot
@@ -314,6 +326,7 @@ sof-firmware
 spectre-meltdown-checker
 spotify
 spotify-tui
+spyder
 sqlitebrowser
 squashfs-tools
 staruml
@@ -345,11 +358,15 @@ texlive-science
 textroom
 texworks
 thunar
+thunderbird
+tibia
 tidy
 tiled
 tmux
 transmission-cmake-qt
+transmission-gtk
 ttf-bitstream-vera
+ttf-mac-fonts
 ttf-monapo
 ttf-ms-fonts
 tumbler
@@ -364,14 +381,11 @@ usbmount
 usbutils
 util-linux
 valgrind
-vcpkg-git
 ventoy-bin
 veracrypt
 vi
 vim
 virtualbox
-virtualbox-guest-iso
-virtualbox-host-dkms
 vlc
 vscodium-bin
 vulkan-extra-layers
@@ -400,6 +414,7 @@ xmind-2020
 xorg-fonts-misc
 xorg-server
 xorg-xbacklight
+xorg-xev
 xorg-xfontsel
 xorg-xlsfonts
 xorg-xmodmap

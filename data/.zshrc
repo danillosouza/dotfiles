@@ -28,8 +28,14 @@ fi
 unset __conda_setup
 # <<< conda initialize <<<
 
+# local installs
+export PATH="$HOME/.bin:$PATH"
+
 # vcpkg
 export PATH="$HOME/dev/vcpkg:$PATH"
+
+# Common Lisp
+alias lisp="rlwrap sbcl"
 
 # Perl local::lib
 eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
@@ -87,8 +93,7 @@ alias l='ls -lh --color=auto --group-directories-first'
 alias ll='ls -lah --color=auto --group-directories-first'
 
 # alias php='php7'
-
-alias emacs='emacs -nw'
+alias emacs='emacsclient -c'
 
 alias screensh="scrot -s ~/media/images/screenshots/%Y%m%d_%H%I%M.png" # default screenshot by selection
 alias screensh-f="scrot ~/media/images/screenshots/%Y%m%d_%H%I%M.png"  # full screenshot
@@ -102,6 +107,9 @@ alias maxbkl="sudo zsh -c 'echo 255 > /sys/class/backlight/amdgpu_bl0/brightness
 # enable apl keyboard and normal keyboard
 alias aplkbd="setxkbmap -layout br,apl -variant ,dyalog -option grp:lswitch"
 alias defaultkbd="setxkbmap -layout br"
+
+# gba hacking tools
+alias advmap="proton run $HOME/.gbahack/AdvanceMap/AdvanceMap.exe"
 
 
 ##
@@ -132,11 +140,20 @@ export PROTONPREFIX="$HOME/.proton/pfx"
 alias godot="exec /home/azrl/.godot/Godot_v3.4.3-stable_mono_x11_64/Godot_v3.4.3-stable_mono_x11.64"
 alias proton='/home/azrl/.steam/steam/steamapps/common/Proton\ 6.3/proton'
 alias matrix='cmatrix -abC cyan'
+alias cat='bat'
+
+alias processing="$HOME/.processing/processing && exit"
 
 # Games
-alias minecraft="java -jar \"/home/azrl/.sklauncher/SKlauncher 3-beta.20.jar\""
-alias dfortress="exec /home/azrl/media/games/linux/dwarf_fortress/linux_lnp/LinuxLNP-0.43.05-r07/startlnp"
+alias minecraft="java -jar \"$HOME/.sklauncher/SKlauncher 3-beta.20.jar\""
+alias dfortress="exec $HOME/media/games/linux/dwarf_fortress/linux_lnp/LinuxLNP-0.43.05-r07/startlnp"
 alias ts4="proton run \"$PROTONPREFIX/drive_c/Games/The Sims 4/Game/Bin/TS4_x64.exe\""
+alias starsector="$HOME/media/games/linux/starsector/starsector.sh"
+alias dokidoki="exec $HOME/.ddlc/DDLC.sh"
+
+
+# character creator
+alias sutemochars="exec $HOME/media/games/itch.io/_tools/sutemo.x86_64"
 
 # Other games installed:
 #   - cataclysm / cataclysm-tiles (Cataclysm: Dark Days Ahead)

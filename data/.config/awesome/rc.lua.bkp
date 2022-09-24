@@ -50,7 +50,7 @@ beautiful.notification_font = "Noto Sans Regular 14"
 terminal = "alacritty"
 browser = "firefox"
 filemanager = "nemo"
-editor = "emacsclient -c"
+editor = "emacs"
 gui_editor="vscodium"
 -- Default modkey.
 -- Usually, Mod4 is the key with a logo between Control and Alt.
@@ -340,7 +340,6 @@ globalkeys = gears.table.join(
             end
         end,
         {description = "restore minimized", group = "client"}),
-    
     -- awful.key({ modkey }, "w", function () mymainmenu:show() end, {description = "show main menu", group = "awesome"}),
 
     -- 
@@ -359,16 +358,14 @@ globalkeys = gears.table.join(
     -- Launcher
     awful.key({ modkey }, "Return", function () awful.spawn(terminal) end,                         {description = "open a terminal", group = "launcher"}),
     awful.key({ modkey }, "z",      function () awful.spawn(terminal) end,                         {description = "open a terminal", group = "launcher"}),
-    -- awful.key({ modkey }, "p",      function() menubar.show() end,                                 {description = "show the menubar", group = "launcher"}),
-    awful.key({ modkey }, "p",      function () awful.spawn("pyroom") end,                         {description = "pyroom editor", group = "launcher"}),
-    awful.key({ modkey }, "w",      function () awful.spawn("obsidian") end,                       {description = "obsidian vaults", group = "launcher"}),
+    awful.key({ modkey }, "p",      function() menubar.show() end,                                 {description = "show the menubar", group = "launcher"}),
     awful.key({ modkey }, "r",      function () awful.screen.focused().mypromptbox:run() end,      {description = "run prompt", group = "launcher"}),
     awful.key({ modkey }, "y",      function () awful.spawn(terminal.." -e ipython")  end,         {description = "ipython console", group = "launcher"}),
-    awful.key({ modkey }, "i",      function () awful.spawn(editor)  end, {description = "emacs", group = "launcher"}),
+    awful.key({ modkey }, "i",      function () awful.spawn(terminal.." -e emacs -nw .scratchpad.org")  end, {description = "scratchpad", group = "launcher"}),
 
     awful.key({ modkey }, "b", function () awful.spawn(browser)     end, {description = "launch Browser", group = "launcher"}),
     awful.key({ modkey }, "e", function () awful.spawn(filemanager) end, {description = "launch filemanager", group = "launcher"}),
-    awful.key({ modkey }, "v", function () awful.spawn(gui_editor)  end, {description = "vscode", group = "launcher"}),
+    awful.key({ modkey }, "v", function () awful.spawn(gui_editor)  end, {description = "launch editor", group = "launcher"}),
 
     --
     -- Screenshot

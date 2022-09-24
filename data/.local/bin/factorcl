@@ -1,0 +1,175 @@
+#!/bin/zsh
+
+RED='\033[1;31m'
+ORANGE='\033[1;33m'
+CYAN='\033[1;36m'
+NC='\033[0m'
+
+QL_PATH="${HOME}/quicklisp/local-projects"
+BULLET="${CYAN}[${ORANGE}+${CYAN}]${NC}"
+BULLET_ALERT="${CYAN}[${RED}!${CYAN}]${NC}"
+
+usage()
+{
+    echo -e "${CYAN}[${ORANGE}?${CYAN}]${NC} Usage: $0 <PROJECT>\n"
+    exit 1
+}
+
+duplicated()
+{
+    echo -e "${CYAN}[${RED}x${CYAN}]${NC} Project already exists.\n"
+    exit 1
+}
+
+# print header
+echo $CYAN
+figlet "FactorCL"
+echo "Common Lisp project scaffold generator v0.1"
+echo $NC
+
+# get project name
+P_NAME=$1
+P_PATH="${QL_PATH}/${P_NAME}"
+[ -z "$P_NAME" ] && usage
+
+# header
+echo "${BULLET} Project: $P_NAME"
+
+# creating project directory structure
+echo "${BULLET} Creating directory structure..."
+
+if [ -d "$QL_PATH" ]; then
+    echo "${BULLET} Creating on Quicklisp local projects."
+    echo "    ${P_PATH}"
+else
+    P_PATH="${PWD}/${P_NAME}"
+    echo "${BULLET} Creating on current directory."
+    echo "    ${P_PATH}"
+fi
+
+[ -d "$P_PATH" ] && duplicated
+mkdir -p $P_PATH/src
+
+# README file
+echo "${BULLET} Generating README file"
+cat >>$P_PATH/README.org <<EOT
+#+TITLE:       ${P_NAME}
+#+SUBTITLE:    Project documentation.
+#+AUTHOR:      ${USER}
+#+EMAIL:       (concat "{$USER}" at-sign "localhost")
+#+DESCRIPTION: Brief description of the project.
+#+KEYWORDS:    some, relevant, keywords
+#+LANGUAGE:    en
+
+
+* Summary
+
+Demo readme file for project documentation.
+EOT
+
+
+# gitignore file
+echo "${BULLET} Generating .gitignore"
+cat >> $P_PATH/.gitignore <<EOT
+
+EOT
+
+
+# main package file
+echo "${BULLET} Generating placeholder for the ${P_NAME} package."
+cat >> $P_PATH/src/$P_NAME.lisp <<EOT
+;;;; ${P_NAME}.lisp
+
+(in-package #:${P_NAME})
+
+(defun main (&optional argv)
+  (write-line "Hello Demo! :3"))
+
+EOT
+chmod +x $P_PATH/$P_NAME.lisp
+
+
+# package descriptor
+echo "${BULLET} Generating package descriptor for the project."
+cat >> $P_PATH/package.lisp <<EOT
+;;;; package.lisp
+
+(defpackage #:${P_NAME}
+  (:use #:cl)
+  (:export #:main))
+
+EOT
+
+
+# project file
+echo "${BULLET} Generating project descriptor."
+cat >> $P_PATH/$P_NAME.asd <<EOT
+;;;; ${P_NAME}.asd
+
+(asdf:defsystem #:${P_NAME}
+  :description "Describe ${P_NAME} here"
+  :author "${USER} <${USER}@localhost>"
+  :license  "Specify license here"
+  :version "0.0.1"
+  :serial t
+  :components ((:file "package")
+               (:file "src/${P_NAME}")))
+
+EOT
+
+
+# makefile
+echo "${BULLET} Generating Makefile for the binary build."
+cat >> $P_PATH/Makefile <<EOT
+# A simple makefile template for creating a standalone executable Common Lisp image.
+#
+# Dependencies:
+#  * SBCL
+#  * Quicklisp
+
+SYSNAME = ${P_NAME}
+TARGET = \$(SYSNAME)
+ENTRYFUNC = \$(SYSNAME):main
+
+all: \$(TARGET)
+
+.PHONY: clean
+.SILENT: run clean
+
+\$(TARGET): buildapp quicklisp-manifest.txt
+	./buildapp --manifest-file quicklisp-manifest.txt \
+			   --compress-core \
+			   --load-system \$(SYSNAME) \
+			   --asdf-path "./" \
+			   --entry \$(ENTRYFUNC) \
+			   --output \$(TARGET)
+
+quicklisp-manifest.txt:
+	sbcl --no-userinit --no-sysinit --non-interactive \
+		 --load ~/quicklisp/setup.lisp \
+		 --eval '(load "\$(SYSNAME).asd")' \
+		 --eval '(ql:quickload "\$(SYSNAME)")' \
+		 --eval '(ql:write-asdf-manifest-file "quicklisp-manifest.txt")'
+
+buildapp:
+	sbcl --no-userinit --no-sysinit --non-interactive \
+		 --load ~/quicklisp/setup.lisp \
+		 --eval '(ql:quickload "buildapp")' \
+		 --eval '(buildapp:build-buildapp)'
+
+clean:
+	-rm quicklisp-manifest.txt
+	-rm \$(TARGET) buildapp
+
+run:
+	./\$(TARGET)
+EOT
+
+
+# git
+echo "${BULLET} Initializing GIT repository."
+git init --quiet $P_PATH
+
+
+# finished!
+echo -e "${BULLET_ALERT} All done :)\n"

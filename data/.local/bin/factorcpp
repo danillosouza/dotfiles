@@ -776,8 +776,8 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 ##
 ## Build Project
 set(SRC_DIR \${CMAKE_CURRENT_SOURCE_DIR}/source)
-set(HDR_DIR \${CMAKE_CURRENT_SOURCE_DIR}/source \${CMAKE_CURRENT_SOURCE_DIR}/include \${CMAKE_CURRENT_SOURCE_DIR}/vendors)
-file(GLOB_RECURSE SRCS \${SRC_DIR}/*.cc \${CMAKE_CURRENT_SOURCE_DIR}/vendors/*.cc)
+set(HDR_DIR \${CMAKE_CURRENT_SOURCE_DIR}/source \${CMAKE_CURRENT_SOURCE_DIR}/include)
+file(GLOB_RECURSE SRCS \${SRC_DIR}/*.cc)
 add_executable(\${EXEC_NAME} \${SRCS})
 target_include_directories(\${EXEC_NAME} PUBLIC \${SRC_DIR})
 target_include_directories(\${EXEC_NAME} PUBLIC \${HDR_DIR})

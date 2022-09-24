@@ -39,10 +39,7 @@ run msm_notifier
 
 # multimonitor and retore wallpapers
 multimon.sh
-nitrogen --restore &
-
-# launch cherrytree
-cherrytree &
+nitrogen --restore & disown
 
 # do not shut off screen when idle
 xset -dpms s off
@@ -51,4 +48,8 @@ xset -dpms s off
 # setxkbmap -layout br,apl -variant ,dyalog -option grp:lswitch
 
 # launch emacs daemon
-emacs --daemon
+/usr/bin/emacs --daemon
+
+# launch emote emoji picker
+emote & disown
+
