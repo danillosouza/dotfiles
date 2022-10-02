@@ -760,6 +760,8 @@ cmake_minimum_required(VERSION 3.9.1)
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+# Generate the compile_commands.json file
+set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
 ##
 ## Define project
@@ -959,6 +961,7 @@ if [[ \$ARG == "run" ]]; then
 elif [[ \$ARG == "dbg" || \$ARG == "gdb" ]]; then
     gdb "./\$BINARY"
 else
+    cd "\$BUILD_DIR"
     cmake ..
     cp "\$BUILD_DIR/compile_commands.json" ..
     cmake --build .

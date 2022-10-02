@@ -981,6 +981,7 @@ if [[ \$ARG == "run" ]]; then
 elif [[ \$ARG == "dbg" || \$ARG == "gdb" ]]; then
     gdb "./\$BINARY"
 else
+    cd "\$BUILD_DIR"
     cmake ..
     cp "\$BUILD_DIR/compile_commands.json" ..
     cmake --build .
