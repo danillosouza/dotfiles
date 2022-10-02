@@ -16,26 +16,24 @@ struct_summary()
 {
     echo -e "\t${CYAN}./${P_DEMONAME}/${NC}"
     echo -e "\t├── ${CYAN}bin/${NC}"
-    echo -e "\t│   └── ${CYAN}${P_DEMONAME}${NC}"
-    echo -e "\t├── ${CYAN}cmake/${NC}"
+    echo -e "\t├── ${CYAN}build/${NC}"
     echo -e "\t├── ${CYAN}docs/${NC}"
     echo -e "\t├── ${CYAN}include/${NC}"
     echo -e "\t│   └── pch.h"
     echo -e "\t├── ${CYAN}source/${NC}"
     echo -e "\t│   └── ${CYAN}${P_DEMONAME}/${NC}"
     echo -e "\t│       └── main.c"
-    echo -e "\t├── ${CYAN}vendors/${NC}"
     echo -e "\t├── .gitignore"
     echo -e "\t├── CMakeLists.txt"
     echo -e "\t├── CMP.cmake"
     echo -e "\t├── cotire.cmake"
-    echo -e "\t├── ${BLUE}build${NC}"
+    echo -e "\t├── ${BLUE}pack${NC}"
     echo -e "\t├── Doxyfile"
-    echo -e "\t└── README.md"
+    echo -e "\t└── README.org"
     echo -e "\n\n"
     echo -e "\tBuild and run the project with the following commands:"
     echo -e "\t${CYAN}\$ cd ./${P_DEMONAME}${NC}"
-    echo -e "\t${CYAN}\$ ./build [run]${NC}"
+    echo -e "\t${CYAN}\$ ./pack [run]${NC}"
 }
 
 usage()
@@ -80,7 +78,7 @@ echo "${BLUE}[${CYAN}+${BLUE}]${NC} Project: $P_NAME"
 # creating project directory structure
 echo "${BLUE}[${CYAN}+${BLUE}]${NC} Creating directory structure..."
 [ -d "$P_NAME" ] && duplicated
-mkdir -p $P_NAME/bin $P_NAME/cmake $P_NAME/docs $P_NAME/include $P_NAME/vendors $P_NAME/source/$P_NAME
+mkdir -p $P_NAME/include $P_NAME/source/$P_NAME
 
 
 ## ===================================================================
@@ -705,10 +703,9 @@ EOT
 echo "${BLUE}[${CYAN}+${BLUE}]${NC} Creating ${CYAN}.gitignore${NC}"
 cat >> $P_NAME/.gitignore <<EOT
 .vscode/
-cmake/*
+build/*
 docs/*
 bin/*
-*.sh
 EOT
 
 
@@ -716,9 +713,24 @@ EOT
 ## README file
 echo "${BLUE}[${CYAN}+${BLUE}]${NC} Creating ${CYAN}README.md${NC}"
 cat >> $P_NAME/README.md <<EOT
-# README
+#+TITLE: Project ${P_NAME}
+#+DESCRIPTION: Brief description of the concept of the project.
+#+AUTHOR: ${USER}
+
+* Requirements
+- \`gcc\` or \`clang\`
+- \`cmake\`
+- \`doxygen\`
+
+* Introduction
 
 Demo readme file for project documentation.
+
+* TODO
+
+- [ ] feature X
+- [ ] feature Y
+- [ ] feature Z
 EOT
 
 
@@ -793,7 +805,7 @@ ${BUILD_CONF}
 
 
 ##
-## Add dependencies via `pkg-config`
+## Add dependencies via \`pkg-config\`
 #find_package(PkgConfig)
 #if (PKG_CONFIG_FOUND)
 #    pkg_check_modules(XFT "xft")
@@ -860,23 +872,6 @@ ${BUILD_CONF}
 ## Creating precompiled headers
 set_target_properties(\${EXEC_NAME} PROPERTIES COTIRE_CXX_PREFIX_HEADER_INIT "\${CMAKE_CURRENT_SOURCE_DIR}/include/pch.h")
 cotire(\${EXEC_NAME})
-
-
-##
-## Add 'make run' command
-add_custom_target(run
-    COMMAND \${CMAKE_CURRENT_SOURCE_DIR}/run.sh
-    DEPENDS \${CMAKE_CURRENT_SOURCE_DIR}/bin/\${EXEC_NAME}
-    WORKING_DIRECTORY \${CMAKE_PROJECT_DIR}
-)
-
-
-##
-## Add 'make clear' command
-add_custom_target(clear
-    COMMAND rm -Rf \${CMAKE_CURRENT_SOURCE_DIR}/bin/* \${CMAKE_CURRENT_SOURCE_DIR}/cmake/* \${CMAKE_CURRENT_SOURCE_DIR}/*.sh
-    WORKING_DIRECTORY \${CMAKE_PROJECT_DIR}
-)
 EOT
 
 
@@ -914,48 +909,87 @@ fi
 
 ##
 ## Build script on the root dir
-echo "${BLUE}[${CYAN}+${BLUE}]${NC} Creating ${CYAN}build${NC} tool ${BLUE}($ ./build [run])${NC}"
-cat >> $P_NAME/build <<EOT
+echo "${BLUE}[${CYAN}+${BLUE}]${NC} Creating ${CYAN}pack${NC} tool ${BLUE}($ ./build [run|dbg|docs|clear])${NC}"
+cat >> $P_NAME/pack <<EOT
 #!/bin/zsh
-
-ARG=\$1
+#
+ARG="\$1"
 BINARY="${P_NAME}"
 ROOT_DIR="\${0:a:h}"
-BUILD_DIR="\$ROOT_DIR/cmake"
+BUILD_DIR="\$ROOT_DIR/build"
 DIST_DIR="\$ROOT_DIR/bin"
 
-if [[ \$ARG == "doc" || \$ARG == "docs" ]]; then
-    doxygen ./Doxyfile
+
+if [[ \$ARG == "-h" || \$ARG == "--help" || \$ARG == "help"  ]]; then
+    echo "Usage: ./pack [option]"
+    echo ""
+    echo "Available Options:"
+    echo "      doc      -  build documentation with doxygen."
+    echo "      clear    -  remove temporary building files."
+    echo "      run      -  runs the application without building."
+    echo "      dbg      -  build the application and launches GDB."
     exit 0
 fi
 
+
+if [[ \$ARG == "doc" || \$ARG == "docs" ]]; then
+    doxygen "\$ROOT_DIR/Doxyfile"
+    exit 0
+fi
+
+
+mkdir -p "\$DIST_DIR"
+mkdir -p "\$BUILD_DIR"
 cd "\$BUILD_DIR"
 
+
 if [[ \$ARG == "clear" || \$ARG == "clean" ]]; then
-    make clear
+    cd "\$ROOT_DIR"
+    rm -Rf "\$DIST_DIR"
+    rm -Rf "\$BUILD_DIR"
+    rm -Rf "\$ROOT_DIR/docs";
+    rm -f compile_commands.json
     exit 0
 fi
 
-cmake ..
-make
 
-cd "\$ROOT_DIR"; echo"";
-if [[ \$ARG == "run" ]] exec "\$DIST_DIR/\$BINARY"
-if [[ \$ARG == "dbg" || \$ARG == "gdb" ]] gdb "\$DIST_DIR/\$BINARY"
+cd "\$DIST_DIR"; echo"";
+if [[ \$ARG == "run" ]]; then
+    exec "./\$BINARY"
+elif [[ \$ARG == "dbg" || \$ARG == "gdb" ]]; then
+    gdb "./\$BINARY"
+else
+    cmake ..
+    cp "\$BUILD_DIR/compile_commands.json" ..
+    cmake --build .
+fi
 EOT
-chmod +x $P_NAME/build
+chmod +x $P_NAME/pack
 
 
 ##
-## Include Doxyfile template for the project documentation
+## Creating Doxyfile
+DOXY_TEMPLATE="$HOME/dev/Doxyfile-template"
 echo "${BLUE}[${CYAN}+${BLUE}]${NC} Creating ${CYAN}Doxyfile${NC} template"
-cp $HOME/dev/Doxyfile-template $P_NAME/Doxyfile
-
+if [[ -f "$DOXY_TEMPLATE" ]]; then
+    cp "$DOXY_TEMPLATE" $P_NAME/Doxyfile
+else
+    doxygen -g $P_NAME/Doxyfile
+fi
 
 ##
 ## cotire.cmake (v1.8.1)
 echo "${BLUE}[${CYAN}+${BLUE}]${NC} Creating ${CYAN}cotire.cmake${NC}"
 (cd ${P_NAME} && curl -LJO --silent https://github.com/sakra/cotire/releases/download/cotire-1.8.1/cotire.cmake && cd ..)
+
+##
+## Git
+echo "${BLUE}[${CYAN}+${BLUE}]${NC} Initializing ${CYAN}GIT${NC} repostory"
+cd $P_NAME/
+git init --quiet .
+git add --all
+git commit --quiet -m"initial commit"
+
 
 
 ##

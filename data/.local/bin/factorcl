@@ -82,7 +82,7 @@ cat >> $P_PATH/src/$P_NAME.lisp <<EOT
 
 (in-package #:${P_NAME})
 
-(defun main (&optional argv)
+(defun main (&rest argv)
   (write-line "Hello Demo! :3"))
 
 EOT

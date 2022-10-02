@@ -639,6 +639,22 @@ echo "${BLUE}[${CYAN}+${BLUE}]${NC} Creating directory structure..."
 [ -d "$P_NAME" ] && duplicated
 mkdir -p $P_NAME/src $P_NAME/lib $P_NAME/inc $P_NAME/obj $P_NAME/bin $P_NAME/doc
 
+
+# ClangD compile flags
+echo "${BLUE}[${CYAN}+${BLUE}]${NC} Creating compile_flags.txt"
+cat >> $P_NAME/compile_flags.txt <<EOT
+-Isrc
+-Iinclude
+-fPIC
+-g
+-Wall
+-Wextra
+-Wpedantic
+-std=c++17
+EOT
+
+
+
 # Makefile
 echo "${BLUE}[${CYAN}+${BLUE}]${NC} Creating makefile"
 cat >> $P_NAME/Makefile <<EOT

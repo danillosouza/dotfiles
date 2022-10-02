@@ -94,6 +94,8 @@ alias ll='ls -lah --color=auto --group-directories-first'
 
 # alias php='php7'
 alias emacs='emacsclient -c'
+alias emacs-start='/usr/bin/emacs --daemon'
+alias emacs-reset='killall emacs && /usr/bin/emacs --daemon'
 
 alias screensh="scrot -s ~/media/images/screenshots/%Y%m%d_%H%I%M.png" # default screenshot by selection
 alias screensh-f="scrot ~/media/images/screenshots/%Y%m%d_%H%I%M.png"  # full screenshot
