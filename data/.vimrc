@@ -121,7 +121,7 @@ autocmd VimEnter * if argc() == 1 && isdirectory(argv()[0]) && !exists('s:std_in
 " Colors
 """"""""""""""""""""""""""""""""""""
 
-colorscheme gruvbox
+"colorscheme gruvbox
 set background=dark
 set encoding=UTF-8
 set guifont=DroidSansMono\ Nerd\ Font\ 11

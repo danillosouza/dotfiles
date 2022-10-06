@@ -100,6 +100,8 @@ alias emacs-reset='killall emacs && /usr/bin/emacs --daemon'
 alias screensh="scrot -s ~/media/images/screenshots/%Y%m%d_%H%I%M.png" # default screenshot by selection
 alias screensh-f="scrot ~/media/images/screenshots/%Y%m%d_%H%I%M.png"  # full screenshot
 
+alias tree="/usr/bin/tree --dirsfirst"
+
 # mount external drive
 alias hdmount="udisksctl mount -b /dev/sda1"
 

@@ -1,0 +1,33 @@
+#!/bin/zsh
+
+PROJECT=$1
+RED='\033[1;31m'
+BLUE='\033[1;34m'
+CYAN='\033[1;36m'
+NC='\033[0m'
+
+##
+## Check for duplicates
+if [[ -d $PROJECT ]]; then
+    echo "${RED}The project '${PROJECT}' already exists, nothing to do here.${NC}"
+    exit 0
+fi
+
+##
+## Project Initialization
+if [[ ! -z $PROJECT ]]; then
+    echo "${CYAN}" && figlet "C++17 Modern" && echo "${NC}"
+    echo "Fetching template for project ${BLUE}${PROJECT}${NC}..."
+    
+    git clone --quiet git@gitlab.com:chimeralabs/cpp17-modern.git "${PROJECT}"
+    cd "${PROJECT}"
+    rm -Rf ./.git/
+    git init --quiet .
+    cd ..
+    
+    echo "${CYAN}All done! :3${NC}"
+    echo ""
+    tree --dirsfirst "${PROJECT}" 
+    exit 0
+fi
+
