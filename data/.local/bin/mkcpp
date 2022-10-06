@@ -6,6 +6,14 @@ BLUE='\033[1;34m'
 CYAN='\033[1;36m'
 NC='\033[0m'
 
+
+print_header () {
+    echo -e "${BLUE}" && toilet -f future "Chimera Labs"
+    echo -e "${CYAN}" && toilet -f future "       C++17"
+    echo "${NC}"
+}
+
+
 ##
 ## Check for duplicates
 if [[ -d $PROJECT ]]; then
@@ -16,7 +24,7 @@ fi
 ##
 ## Project Initialization
 if [[ ! -z $PROJECT ]]; then
-    echo "${CYAN}" && figlet "C++17 Modern" && echo "${NC}"
+    print_header
     echo "Fetching template for project ${BLUE}${PROJECT}${NC}..."
     
     git clone --quiet git@gitlab.com:chimeralabs/cpp17-modern.git "${PROJECT}"
@@ -31,3 +39,14 @@ if [[ ! -z $PROJECT ]]; then
     exit 0
 fi
 
+##
+## Help message
+SELF=`basename $0`
+print_header
+echo ""
+echo "To create a new workspace for a C++17 multi project, run:"
+echo "${BLUE}\$${NC} ${SELF} <workspace>"
+echo ""
+echo ""
+
+    
