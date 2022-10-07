@@ -31,9 +31,6 @@ unset __conda_setup
 # local installs
 export PATH="$HOME/.bin:$PATH"
 
-# vcpkg
-export PATH="$HOME/dev/vcpkg:$PATH"
-
 # Common Lisp
 alias lisp="rlwrap sbcl"
 

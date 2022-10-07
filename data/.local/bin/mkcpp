@@ -21,6 +21,20 @@ if [[ -d $PROJECT ]]; then
     exit 0
 fi
 
+
+##
+## Check internet connection
+## TODO: Provide some kind of offline generator without bloating the script too much.
+## TODO: Create separate 'mkcpp-app' and 'mkcpp-lib' to generate binary and library
+##       projects inside an existing workspace.
+HASNET=$(curl -Is https://google.com | head -1)
+if [[ -z $HASNET ]]; then
+    HASNET="true"
+else
+    HASNET="false"
+fi
+
+
 ##
 ## Project Initialization
 if [[ ! -z $PROJECT ]]; then
