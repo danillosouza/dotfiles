@@ -101,6 +101,12 @@ map Y y$
 " map <C-L> (redraw screen) to also turn off search highlighting until the next search
 nnoremap <C-L> :nohl<CR><C-L>
 
+" project explorer
+map <C-p> :NERDTreeToggle<CR>
+
+" terminal shortcut
+map <C-t> :terminal<CR>
+
 
 """"""""""""""""""""""""""""""""""""
 " Tweaks

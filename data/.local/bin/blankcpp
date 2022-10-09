@@ -359,6 +359,12 @@ void processInput(GLFWwindow *window)
 }
 
 
+struct Vertex {
+    float Position[3];
+    float Color[3];
+};
+
+
 int main(int argc, char **argv)
 {
     const int WINDOW_W = 1280, WINDOW_H = 720;
@@ -400,15 +406,13 @@ int main(int argc, char **argv)
     // Vertex Shader
     const char *vertexShaderSource = R"VTX(
         #version 330 core
-        layout (location = 0) in vec3 pos;
-        layout (location = 1) in vec3 defaultColor;
-        out vec3 v_color;
-
-        uniform vec3 customColor;
+        layout (location = 0) in vec3 Position;
+        layout (location = 1) in vec3 Color;
+        out vec3 VtxColor;
 
         void main() {
-            gl_Position = vec4(pos.xyz, 1.0f);
-            v_color = defaultColor;
+            gl_Position = vec4(Position.xyz, 1.0f);
+            VtxColor = Color;
         }
     )VTX";
 
@@ -421,11 +425,13 @@ int main(int argc, char **argv)
     // Fragment Shader
     const char *fragmentShaderSource = R"FRAG(
         #version 330 core
-        in vec3 v_color;
-        out vec4 color;
+        in vec3 VtxColor;
+        out vec4 PixelColor;
+
+        uniform vec4 CustomColor;
 
         void main() {
-            color = vec4(v_color, 1.0f);
+            PixelColor = (vec4(VtxColor, 1.0f) + CustomColor) / 2;
         }
     )FRAG";
 
@@ -451,12 +457,12 @@ int main(int argc, char **argv)
     //
     
     // Creating triangle vertices
-    float vertices[] = {
-        // positions          // colors
-         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f, // top right
-         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f, // bottom right
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f, // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f  // top left
+    Vertex vertices[] = {
+          // Position              // Color
+        { { 0.5f,  0.5f, 0.0f },   { 1.0f, 0.0f, 0.0f } }, // top right
+        { { 0.5f, -0.5f, 0.0f },   { 0.0f, 1.0f, 0.0f } }, // bottom right
+        { {-0.5f, -0.5f, 0.0f },   { 0.0f, 0.0f, 1.0f } }, // bottom left
+        { {-0.5f,  0.5f, 0.0f },   { 1.0f, 1.0f, 1.0f } }  // top left
     };
 
     unsigned int indices[] = {
@@ -482,13 +488,16 @@ int main(int argc, char **argv)
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     // Tells OpenGL how to interpret vertex data
-    int attr_position = 0, attr_color = 1; // data starts at index 0, as stated in the shader (location = 0)
-    int size_position = 3, size_color = 3;  // size of the vertex attribute, in this case 3 for a vec3 (x, y, z)
-    int stride = 6 * sizeof(float); // space between consecutive attributes, we advance in steps of 3 as it is tightly packed
-    glVertexAttribPointer(attr_position, size_position, GL_FLOAT, GL_FALSE, stride, (void *) 0);
+    int attr_position = 0; // locations of the attributes on the shader
+    int attr_color    = 1;
+
+    int size_position = sizeof(Vertex::Position) / sizeof(float); // size of each vertex attribute
+    int size_color    = sizeof(Vertex::Color) / sizeof(float);
+
+    glVertexAttribPointer(attr_position, size_position, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *) offsetof(Vertex, Position));
     glEnableVertexAttribArray(attr_position);
 
-    glVertexAttribPointer(attr_color, size_color, GL_FLOAT, GL_FALSE, stride, (void *) (3 * sizeof(float)));
+    glVertexAttribPointer(attr_color, size_color, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *) offsetof(Vertex, Color));
     glEnableVertexAttribArray(attr_color);
 
     // unbind buffers
@@ -517,7 +526,7 @@ int main(int argc, char **argv)
         // passing custom color to the shaders
         float timeValue = glfwGetTime();
         float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
-        int uniformCustomColor = glGetUniformLocation(shaderProgram, "customColor");
+        int uniformCustomColor = glGetUniformLocation(shaderProgram, "CustomColor");
         glUniform4f(uniformCustomColor, 1.0f, greenValue, 0.2f, 1.0f);
 
         // Draw elements to the screen

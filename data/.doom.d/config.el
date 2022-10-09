@@ -89,3 +89,7 @@
 (after! rustic
   (setq rustic-lsp-server 'rust-analyzer))
 
+;; Disable LSP auto-formatting while typing
+(use-package-hook! lsp-mode
+  :post-config
+  (setq lsp-enable-on-type-formatting nil))
