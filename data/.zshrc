@@ -89,6 +89,9 @@ alias run_portal="docker run -d --name portal -p 80:80 -v /home/azrl/dev/maisa/a
 alias l='ls -lh --color=auto --group-directories-first'
 alias ll='ls -lah --color=auto --group-directories-first'
 
+# NVIM > VIM
+alias vim="nvim"
+
 # alias php='php7'
 alias emacs='emacsclient -c'
 alias emacs-start='/usr/bin/emacs --daemon'

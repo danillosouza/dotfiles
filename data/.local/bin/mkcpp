@@ -1,6 +1,7 @@
 #!/bin/zsh
 
 PROJECT=$1
+RECIPE=$2
 RED='\033[1;31m'
 BLUE='\033[1;34m'
 CYAN='\033[1;36m'
@@ -23,19 +24,6 @@ fi
 
 
 ##
-## Check internet connection
-## TODO: Provide some kind of offline generator without bloating the script too much.
-## TODO: Create separate 'mkcpp-app' and 'mkcpp-lib' to generate binary and library
-##       projects inside an existing workspace.
-HASNET=$(curl -Is https://google.com | head -1)
-if [[ -z $HASNET ]]; then
-    HASNET="true"
-else
-    HASNET="false"
-fi
-
-
-##
 ## Project Initialization
 if [[ ! -z $PROJECT ]]; then
     print_header
@@ -43,13 +31,28 @@ if [[ ! -z $PROJECT ]]; then
     
     git clone --quiet git@gitlab.com:chimeralabs/cpp17-modern.git "${PROJECT}"
     cd "${PROJECT}"
-    rm -Rf ./.git/
-    git init --quiet .
+
+    if [[ "${RECIPE}" == "opengl" || "${RECIPE}" == "gl" ]]; then
+        echo "${CYAN}Cooking OpenGL+ImGui recipe...${NC}"
+        echo ""
+        git checkout opengl/glfw-imgui --quiet
+        git submodule update --init
+    else
+        rm -Rf ./.git/
+        git init --quiet .
+    fi
+
     cd ..
     
+    echo ""
     echo "${CYAN}All done! :3${NC}"
     echo ""
-    tree --dirsfirst "${PROJECT}" 
+
+    if [[ -z "${RECIPE}" ]]; then
+        tree -CL 4 --dirsfirst "${PROJECT}" 
+    else
+        tree -dCL 2 --dirsfirst "${PROJECT}" 
+    fi
     exit 0
 fi
 

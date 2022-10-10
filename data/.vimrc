@@ -104,9 +104,24 @@ nnoremap <C-L> :nohl<CR><C-L>
 " project explorer
 map <C-p> :NERDTreeToggle<CR>
 
+" tagbar explorer
+nmap <F8> :TagbarToggle<CR>
+
 " terminal shortcut
 map <C-t> :terminal<CR>
 
+
+" multi-cursor mapping
+let g:multi_cursor_use_default_mapping=0
+
+let g:multi_cursor_start_word_key      = '<C-n>'
+let g:multi_cursor_select_all_word_key = '<A-n>'
+let g:multi_cursor_start_key           = 'g<C-n>'
+let g:multi_cursor_select_all_key      = 'g<A-n>'
+let g:multi_cursor_next_key            = '<C-n>'
+let g:multi_cursor_prev_key            = '<C-p>'
+let g:multi_cursor_skip_key            = '<C-x>'
+let g:multi_cursor_quit_key            = '<Esc>'
 
 """"""""""""""""""""""""""""""""""""
 " Tweaks
@@ -127,7 +142,9 @@ autocmd VimEnter * if argc() == 1 && isdirectory(argv()[0]) && !exists('s:std_in
 " Colors
 """"""""""""""""""""""""""""""""""""
 
-"colorscheme gruvbox
+" air-line theme
+let g:airline_theme='wombat'
+
 set background=dark
 set encoding=UTF-8
 set guifont=DroidSansMono\ Nerd\ Font\ 11
