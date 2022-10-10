@@ -53,8 +53,7 @@ pack()
     cp -f $HOME/.local/bin/sshot $DOTSDIR/.local/bin/sshot && echo "${EPREFIX} sshot"
     cp -f $HOME/.local/bin/soundsh $DOTSDIR/.local/bin/soundsh && echo "${EPREFIX} soundsh"
 
-    echo -e "\n${RED}--- PACKING EMACS CONFIG ---${NC}\n"
-    cp -TRf $HOME/.emacs.d $DOTSDIR/.emacs.d && echo "${EPREFIX} .emacs.d"
+    echo -e "\n${RED}--- PACKING DOOM EMACS CONFIG ---${NC}\n"
     cp -TRf $HOME/.doom.d $DOTSDIR/.doom.d   && echo "${EPREFIX} .doom.d"
 
     echo -e "\n${GREEN}All done ;)${NC}\n"
@@ -95,8 +94,7 @@ unpack()
     [[ -f $DOTSDIR/.local/bin/sshot ]] && cp -f $DOTSDIR/.local/bin/sshot $HOME/.local/bin/sshot && chmod +x $HOME/.local/bin/sshot && echo "${EPREFIX} sshot"
     [[ -f $DOTSDIR/.local/bin/soundsh ]] && cp -f $DOTSDIR/.local/bin/soundsh $HOME/.local/bin/soundsh && chmod +x $HOME/.local/bin/soundsh && echo "${EPREFIX} soundsh"
 
-    echo -e "\n${RED}--- UNPACKING EMACS CONFIG ---${NC}\n"
-    [[ -d $DOTSDIR/.emacs.d ]] && cp -TRf $HOME/.emacs.d $DOTSDIR/.emacs.d && echo "${EPREFIX} .emacs.d"
+    echo -e "\n${RED}--- UNPACKING DOOM EMACS CONFIG ---${NC}\n"
     [[ -d $DOTSDIR/.doom.d ]]  && cp -TRf $HOME/.doom.d $DOTSDIR/.doom.d   && echo "${EPREFIX} .doom.d"
 
     echo -e "\n${GREEN}All done ;)${NC}\n"
