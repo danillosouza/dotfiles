@@ -36,12 +36,11 @@ if [[ ! -z $PROJECT ]]; then
         echo "${CYAN}Cooking OpenGL+ImGui recipe...${NC}"
         echo ""
         git checkout opengl/glfw-imgui --quiet
-        git submodule update --init
-    else
-        rm -Rf ./.git/
-        git init --quiet .
+        git submodule update --init && echo " done! ;)"
     fi
 
+    rm -Rf ./.git/
+    git init --quiet .
     cd ..
     
     echo ""
