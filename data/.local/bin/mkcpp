@@ -14,6 +14,27 @@ print_header () {
     echo "${NC}"
 }
 
+git_readd_submodules () {
+    cat ../.gitmodules | grep url | awk '{print $3}' | xargs -L1 git submodule add
+}
+
+git_reinit_repo () {
+    rm -Rf ./.git/
+    git init --quiet .
+    
+    if [[ -f ".gitmodules" && -d "vendors" ]]; then
+        # backup glad (non submodule dependency)
+        mv ./vendors/glad/ ./
+        rm -Rf ./vendors/*/
+        mv ./glad/ ./vendors/glad/
+
+        cd vendors/
+        git_readd_submodules
+
+        cd ../
+    fi
+}
+
 
 ##
 ## Check for duplicates
@@ -35,13 +56,15 @@ if [[ ! -z $PROJECT ]]; then
     if [[ "${RECIPE}" == "opengl" || "${RECIPE}" == "gl" ]]; then
         echo "${CYAN}Cooking OpenGL+ImGui recipe...${NC}"
         echo ""
-        git checkout opengl/glfw-imgui --quiet
-        git submodule update --init && echo " done! ;)"
+        git checkout opengl/glfw-imgui --quiet && git_reinit_repo
+
+        cd vendors/imgui/
+        git checkout docking --quiet
+        cd ../../
+    else
+        git_reinit_repo
     fi
 
-    rm -Rf ./.git/
-    git init --quiet .
-    cd ..
     
     echo ""
     echo "${CYAN}All done! :3${NC}"

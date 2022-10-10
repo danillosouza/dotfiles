@@ -48,7 +48,7 @@ xset -dpms s off
 # setxkbmap -layout br,apl -variant ,dyalog -option grp:lswitch
 
 # launch emacs daemon
-/usr/bin/emacs --daemon
+$HOME/.local/bin/emacs --daemon
 
 # launch emote emoji picker
 emote & disown

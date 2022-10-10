@@ -93,3 +93,10 @@
 (use-package-hook! lsp-mode
   :post-config
   (setq lsp-enable-on-type-formatting nil))
+
+;; Disable Projectile caching
+(setq projectile-enable-caching nil)
+
+;; Tries to improve GC performance (32mb currently)
+(after! gcmh
+  (setq gcmh-high-cons-threshold (* 1 33554432)))
