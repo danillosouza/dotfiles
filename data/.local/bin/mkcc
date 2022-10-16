@@ -1,0 +1,806 @@
+#!/bin/sh
+
+## Constants
+readonly RED='\033[1;31m'
+readonly BLUE='\033[1;34m'
+readonly CYAN='\033[1;36m'
+readonly NC='\033[0m'
+
+readonly LANG_C="C"
+readonly LANG_CPP="C++"
+readonly LANG_TEMPLATES=("none" "bearlib" "raylib" "curses")
+
+## Defaults
+EXT="cc"
+PROJECT_NAME=""
+PROJECT_DIRECTORY="${PWD}/${PROJECT_NAME}"
+PROJECT_LANGUAGE=$LANG_CPP
+PROJECT_TEMPLATE=${LANG_TEMPLATES[0]}
+GENERATE_STATIC_LIB=0
+GENERATE_SHARED_LIB=0
+STATIC_LIB_NAME=""
+SHARED_LIB_NAME=""
+
+
+##================================================================
+## Utility Functions
+##
+
+## Help message
+show_help() {
+    TPL_STRING=$(printf ", %s" "${LANG_TEMPLATES[@]}")
+    TPL_STRING="${TPL_STRING:2}"
+
+    echo -e "${CYAN}USAGE:${NC}\n\t$0 [options]\n"
+    echo -e "${CYAN}OPTIONS:${NC}"
+    echo -e "\t${RED}-h${NC}\n\t\tDisplays this help message.\n"
+    echo -e "\t${RED}-c${NC}\n\t\tUses C for the project instead of the C++ by default.\n"
+    echo -e "\t${RED}-n <name>${NC}\n\t\tThe name of the project to be generated.\n"
+    echo -e "\t${RED}-l <libname>${NC}\n\t\tGenerate the template for a static library.\n"
+    echo -e "\t${RED}-s <libname>${NC}\n\t\tGenerate the template for a shared library.\n"
+    echo -e "\t${RED}-t <template>${NC}\n\t\tUse one of the available templates for the project."
+    echo -e "\t\tAvailable templates: ${TPL_STRING}.\n"
+}
+
+## Displays the header banner
+show_header () {
+    echo -e "${CYAN}" && toilet -f future "Chimera Labs"
+    echo -e "${RED}" && toilet -f future "         MkCC-17"
+    echo -e "${NC}\n"
+}
+
+
+##================================================================
+## Entrypoint
+##
+
+show_header
+
+## Parse command options
+while getopts "hcn:l:s:t:" opt; do
+    case "$opt" in
+        h)
+            show_help
+            exit 0
+            ;;
+        c)
+            PROJECT_LANGUAGE=$LANG_C
+            EXT="c"
+            ;;
+        n)
+            PROJECT_NAME=$OPTARG
+            PROJECT_DIRECTORY="${PWD}/${PROJECT_NAME}"
+            ;;
+        l)
+            GENERATE_STATIC_LIB=1
+            STATIC_LIB_NAME=$OPTARG
+            ;;
+        s)
+            GENERATE_SHARED_LIB=1
+            SHARED_LIB_NAME=$OPTARG
+            ;;
+        t)
+            PROJECT_TEMPLATE=$OPTARG
+            if [[ ! "${LANG_TEMPLATES[*]}" =~ "${PROJECT_TEMPLATE}" ]]; then
+                echo -e "Unknown template. Aborting...\n"
+                exit 0
+            fi
+            ;;
+    esac
+done
+
+##
+## The project needs a Name
+if [[ -z "${PROJECT_NAME}" ]]; then
+    echo "The project needs a name to be generated. Aborting..."
+    exit 0
+fi
+
+##
+## Check if we can create the project directory
+if [[ -d "${PROJECT_DIRECTORY}" ]]; then
+    echo "The directory already exists. Aborting..."
+    exit 0
+fi
+
+MAIN_APP_DIR="${PROJECT_DIRECTORY}/projects/${PROJECT_NAME}"
+STATIC_LIB_DIR="${PROJECT_DIRECTORY}/projects/${STATIC_LIB_NAME}"
+SHARED_LIB_DIR="${PROJECT_DIRECTORY}/projects/${SHARED_LIB_NAME}"
+mkdir -p "${MAIN_APP_DIR}"
+
+WORKSPACE_INCLUDES="include \"projects/${PROJECT_NAME}\""
+
+##
+## Main generator function
+main() {
+    Generate_Main_Project
+    Generate_Static_Library
+    Generate_Shared_Library
+    Generate_Premake_Files
+    Generate_Choosen_Template
+}
+
+
+
+##=================================================
+## STATIC FILES
+##=================================================
+
+##
+## PREMAKE & BUILD FILES
+Generate_Premake_Files() {
+    ##
+    ## Generating .gitignore file
+    cat >> "${PROJECT_DIRECTORY}/.gitignore" <<EOF
+.ccls-cache/
+build/
+*.json
+EOF
+
+    ##
+    ## Generating clang-format configuration
+    cat >> "${PROJECT_DIRECTORY}/.clang-format" <<EOF
+---
+BasedOnStyle: LLVM
+ColumnLimit: 100
+IndentWidth: 4
+
+IndentCaseLabels: true
+SpaceAfterTemplateKeyword: false
+AlwaysBreakTemplateDeclarations: 'Yes'
+
+NamespaceIndentation: 'Inner'
+BreakBeforeBraces: Custom
+BraceWrapping:
+    AfterClass: true
+    AfterFunction: true
+EOF
+
+    ##
+    ## Generating workspace file
+    cat >> "${PROJECT_DIRECTORY}/premake5.lua" <<EOF
+--
+-- Generate compile_commands.json for LSP on Emacs
+include("premake5-ccjson")
+
+-- Workspace Definition
+workspace "${PROJECT_NAME}Workspace"
+    location "build"
+    configurations { "Debug", "Release" }
+
+    -- defaults to x86_64
+    architecture "x86_64"
+
+    -- main project and build dir template
+    startproject "${PROJECT_NAME}"
+    outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
+
+
+-- Projects
+${WORKSPACE_INCLUDES}
+EOF
+
+    ##
+    ## Generating workspace file
+    cat >> "${PROJECT_DIRECTORY}/premake5-ccjson.lua" <<EOF
+local p = premake
+
+p.modules.export_compile_commands = {}
+local m = p.modules.export_compile_commands
+
+local workspace = p.workspace
+local project = p.project
+
+function m.getToolset(cfg) return p.tools[cfg.toolset or 'gcc'] end
+
+function m.getIncludeDirs(cfg)
+    local flags = {}
+    for _, dir in ipairs(cfg.includedirs) do
+        table.insert(flags, '-I' .. p.quoted(dir))
+    end
+    for _, dir in ipairs(cfg.sysincludedir or {}) do
+        table.insert(result, '-isystem ' .. p.quoted(dir))
+    end
+    return flags
+end
+
+function m.getCommonFlags(cfg)
+    local toolset = m.getToolset(cfg)
+    local flags = toolset.getcppflags(cfg)
+    flags = table.join(flags, toolset.getdefines(cfg.defines))
+    flags = table.join(flags, toolset.getundefines(cfg.undefines))
+    -- can't use toolset.getincludedirs because some tools that consume
+    -- compile_commands.json have problems with relative include paths
+    flags = table.join(flags, m.getIncludeDirs(cfg))
+    flags = table.join(flags, toolset.getcflags(cfg))
+    return table.join(flags, cfg.buildoptions)
+end
+
+function m.getObjectPath(prj, cfg, node)
+    return path.join(cfg.objdir, path.appendExtension(node.objname, '.o'))
+end
+
+function m.getDependenciesPath(prj, cfg, node)
+    return path.join(cfg.objdir, path.appendExtension(node.objname, '.d'))
+end
+
+function m.getFileFlags(prj, cfg, node)
+    return table.join(m.getCommonFlags(cfg), {
+        '-o', m.getObjectPath(prj, cfg, node), '-MF',
+        m.getDependenciesPath(prj, cfg, node), '-c', node.abspath
+    })
+end
+
+function m.generateCompileCommand(prj, cfg, node)
+    return {
+        directory = prj.location,
+        file = node.abspath,
+        command = 'cc ' .. table.concat(m.getFileFlags(prj, cfg, node), ' ')
+    }
+end
+
+function m.includeFile(prj, node, depth) return path.iscppfile(node.abspath) end
+
+function m.getConfig(prj)
+    if _OPTIONS['export-compile-commands-config'] then
+        return project.getconfig(prj,
+                                 _OPTIONS['export-compile-commands-config'],
+                                 _OPTIONS['export-compile-commands-platform'])
+    end
+    for cfg in project.eachconfig(prj) do
+        -- just use the first configuration which is usually "Debug"
+        return cfg
+    end
+end
+
+function m.getProjectCommands(prj, cfg)
+    local tr = project.getsourcetree(prj)
+    local cmds = {}
+    p.tree.traverse(tr, {
+        onleaf = function(node, depth)
+            if not m.includeFile(prj, node, depth) then return end
+            table.insert(cmds, m.generateCompileCommand(prj, cfg, node))
+        end
+    })
+    return cmds
+end
+
+local function execute()
+    for wks in p.global.eachWorkspace() do
+        local cfgCmds = {}
+        for prj in workspace.eachproject(wks) do
+            for cfg in project.eachconfig(prj) do
+                local cfgKey = string.format('%s', cfg.shortname)
+                if not cfgCmds[cfgKey] then cfgCmds[cfgKey] = {} end
+                cfgCmds[cfgKey] = table.join(cfgCmds[cfgKey],
+                                             m.getProjectCommands(prj, cfg))
+            end
+        end
+        for cfgKey, cmds in pairs(cfgCmds) do
+            local outfile = string.format('compile_commands/%s.json', cfgKey)
+            p.generate(wks, outfile, function(wks)
+                p.w('[')
+                for i = 1, #cmds do
+                    local item = cmds[i]
+                    local command = string.format([[
+          {
+            "directory": "%s",
+            "file": "%s",
+            "command": "%s"
+          }]], item.directory, item.file, item.command:gsub('\\\', '\\\\\\\')
+                                                      :gsub('"', '\\\"'))
+                    if i > 1 then p.w(',') end
+                    p.w(command)
+                end
+                p.w(']')
+            end)
+        end
+    end
+end
+
+newaction {
+    trigger = 'export-compile-commands',
+    description = 'Export compiler commands in JSON Compilation Database Format',
+    execute = execute
+}
+
+return m
+EOF
+
+    ##
+    ## Generating PACK script for project management
+    cat >> "${PROJECT_DIRECTORY}/pack" <<EOF
+#!/bin/sh
+
+ARG=\$1
+ARG2=\$2
+
+BINARY="${PROJECT_NAME}"
+ROOT_DIR="\${PWD}"
+BUILD_DIR="\$ROOT_DIR/build"
+
+CCJSON_ORIGIN="\$BUILD_DIR/compile_commands/debug.json"
+CCJSON_TARGET="\$ROOT_DIR/compile_commands.json"
+
+
+mkdir -p "\$BUILD_DIR"
+cd "\$ROOT_DIR"
+
+
+if [[ "\${ARG}" == "-h" || "\${ARG}" == "--help" || "\${ARG}" == "help" ]]; then
+    echo "Usage: \$0 [option]"
+    echo ""
+    echo "Available Options:"
+    echo ""
+    echo "      <none>         -  Build Debug release by default."
+    echo ""
+    echo "      clear          -  Remove temporary building files."
+    echo "      run [release]  -  Runs the default Debug release."
+    echo "      dbg            -  Build the Debug release and launches GDB."
+    echo "      check          -  Runs cppchecck on all projects."
+    echo "      format         -  Formats the source code with the config style."
+    echo "      release        -  Build the optimized release version of the application."
+    exit 0
+fi
+
+
+##
+## Code Formatting
+if [[ "\${ARG}" == "format" ]]; then
+    find projects -regex '.*\.\(cc\|cpp\|h\|hpp\)' -exec clang-format -style=file -i {} \;
+    exit 0
+fi
+
+
+##
+## Clear generated build files
+if [[ "\${ARG}" == "clear" || "\${ARG}" == "clean" ]]; then
+    rm -Rf "\$BUILD_DIR"
+    rm -Rf "\$ROOT_DIR/docs"
+    rm -Rf "\$ROOT_DIR/.ccls-cache"
+    rm -f "\$CCJSON_TARGET"
+    exit 0
+fi
+
+
+##
+## Default action is to build
+if [[ "\${ARG}" != "run" && "\${ARG}" != "dbg" && "\${ARG}" != "gdb" ]]; then
+    premake5 gmake2
+    premake5 export-compile-commands
+
+    ## Emacs cc+lsp needs this file on root directory
+    cp "\$CCJSON_ORIGIN" "\$CCJSON_TARGET"
+    if [[ "\${ARG}" == "check" ]]; then
+        cppcheck --project="\$CCJSON_TARGET"
+        exit 0
+    fi
+
+    ## Switch between release and debug builds
+    cd "\$BUILD_DIR"
+    if [[ "\${ARG}" == "release" ]]; then
+        make config=release
+    else
+        make config=debug
+    fi
+    exit 0
+fi
+
+
+##
+## Run & Debug
+case "\${ARG2}" in
+    "release") RELEASE="Release" ;;
+    "debug")   RELEASE="Debug"   ;;
+    *)         RELEASE="Debug"   ;;
+esac
+
+if [[ "\${ARG}" == "dbg" || "\${ARG}" == "gdb" ]]; then
+    RELEASE="Debug"
+fi
+
+SYSTEM="linux"
+ARCH="x86_64"
+BUILD_NAME="\$RELEASE-\$SYSTEM-\$ARCH"
+DIST_DIR="\$BUILD_DIR/bin/\$BUILD_NAME/\$BINARY"
+
+echo "======================================"
+echo " Working on: \$BUILD_NAME"
+echo ""
+
+if [[ ! -d "\$DIST_DIR" ]]; then
+    echo "Could not locate the '\$BUILD_NAME' release."
+    echo "Run '\$0 \${RELEASE:l}' to build it."
+    exit 1
+fi
+
+[[ "\${ARG}" == "run" ]] && "\$DIST_DIR/\$BINARY"
+[[ "\${ARG}" == "dbg" || "\${ARG}" == "gdb" ]] && gdb "\$DIST_DIR/\$BINARY"
+EOF
+    chmod +x "${PROJECT_DIRECTORY}/pack"
+
+    ##
+    ## Generating README file for the project
+    cat >> "${PROJECT_DIRECTORY}/README.org" <<EOF
+* Modern C++17 Template
+
+A generic template to quickly start a multi project C++17 workspace.
+
+** Requirements
+
+- ~premake5~
+- ~clang-8.0~ (or another modern C++17 compiler like ~gcc-8~ or ~MSVC 2017~).
+- ~cppcheck~
+- ~clang-format~
+- ~doxygen~
+
+** Usage
+
+The project is managed through the script ~./pack~ on the root directory.
+Inside the project directory:
+
+| Action            | Command              |
+|-------------------+----------------------|
+| Build (Debug)     | ~./pack~             |
+| Build (Release)   | ~./pack release~     |
+| Run (Debug)       | ~./pack run~         |
+| Run (Release)     | ~./pack run release~ |
+| Debug with GDB    | ~./pack dbg~         |
+| Format Sources    | ~./pack format~      |
+| Clear Build Files | ~./pack clear~       |
+EOF
+}
+
+
+##
+## MAIN PROJECT SOURCE & FILES
+Generate_Main_Project() {
+    DIALECT="cppdialect \"C++17\""
+    [[ "${PROJECT_LANGUAGE}" == "${LANG_C}" ]] && DIALECT="cdialect \"C11\""
+
+    PROJECT_DIR_INCLUDES="\"src/\""
+    PROJECT_LIB_INCLUDES="#include <stdio.h>"
+    PROJECT_LIB_CALLS=""
+    PROJECT_LINKS=""
+    case "${PROJECT_TEMPLATE}" in
+        "bearlib") PROJECT_LINKS=" \"BearLibTerminal\""
+            ;;
+        "raylib") PROJECT_LINKS=" \"raylib\""
+            ;;
+        "curses") PROJECT_LINKS=" \"ncurses\""
+            ;;
+    esac
+
+    if [[ "${GENERATE_STATIC_LIB}" == "1" ]]; then
+        [[ ! -z "${PROJECT_LINKS}" ]] && PROJECT_LINKS="${PROJECT_LINKS},"
+        PROJECT_LINKS="${PROJECT_LINKS} \"${STATIC_LIB_NAME}\""
+        PROJECT_DIR_INCLUDES="${PROJECT_DIR_INCLUDES}, \"../${STATIC_LIB_NAME}/include/\""
+        read -r -d '' PROJECT_LIB_CALLS << EOF
+    ${PROJECT_LIB_CALLS}
+    ${STATIC_LIB_NAME}_Hello();
+EOF
+        read -r -d '' PROJECT_LIB_INCLUDES << EOF
+${PROJECT_LIB_INCLUDES}
+#include "${STATIC_LIB_NAME}.h"
+EOF
+    fi
+
+    if [[ "${GENERATE_SHARED_LIB}" == "1" ]]; then
+    [[ ! -z "${PROJECT_LINKS}" ]] && PROJECT_LINKS="${PROJECT_LINKS},"
+        PROJECT_LINKS="${PROJECT_LINKS} \"${SHARED_LIB_NAME}\""
+        PROJECT_DIR_INCLUDES="${PROJECT_DIR_INCLUDES}, \"../${SHARED_LIB_NAME}/include/\""
+        read -r -d '' PROJECT_LIB_CALLS << EOF
+    ${PROJECT_LIB_CALLS}
+    ${SHARED_LIB_NAME}_Hello();
+EOF
+
+        read -r -d '' PROJECT_LIB_INCLUDES << EOF
+${PROJECT_LIB_INCLUDES}
+#include "${SHARED_LIB_NAME}.h"
+EOF
+    fi
+
+
+    ##
+    ## Generating BUILD file for the main project
+    cat >> "${MAIN_APP_DIR}/premake5.lua" <<EOF
+project "${PROJECT_NAME}"
+    kind "ConsoleApp"
+    language "${PROJECT_LANGUAGE}"
+    ${DIALECT}
+
+    targetdir("../../build/bin/" .. outputdir .. "/%{prj.name}")
+    objdir("../../build/obj/" .. outputdir .. "/%{prj.name}")
+
+    files {
+        "src/**.cxx",
+        "src/**.cpp",
+        "src/**.cc",
+        "src/**.c"
+    }
+
+    includedirs {
+        ${PROJECT_DIR_INCLUDES}
+    }
+
+    -- Links to external/project libraries
+    links {${PROJECT_LINKS} }
+
+
+    --
+    -- Compiler Specific Configuration
+    --
+
+    -- Release Definitions
+    filter "configurations:Debug"
+        runtime "Debug"
+        defines { "DEBUG" }
+        symbols "On"
+        warnings "Extra"
+        
+    filter "configurations:Release"
+        runtime "Release"
+        defines { "RELEASE" }
+        optimize "On"
+        warnings "Extra"
+
+
+    -- Linux Build
+    filter "system:linux"
+        defines { "PLATFORM_LINUX" }
+        toolset "clang"
+
+    -- Windows Build
+    filter "system:windows"
+        defines { "PLATFORM_WINDOWS" }
+EOF
+
+    ##
+    ## Generating MAIN source file
+    mkdir "${MAIN_APP_DIR}/src"
+    cat >> "${MAIN_APP_DIR}/src/${PROJECT_NAME}.${EXT}" <<EOF
+${PROJECT_LIB_INCLUDES}
+
+int main()
+{
+    printf("Hello World!\n");
+    ${PROJECT_LIB_CALLS}
+    return 0;
+}
+EOF
+}
+
+
+##
+## STATIC LIBRARY SOURCE & BUILD FILES
+Generate_Static_Library() {
+    [[ "${GENERATE_STATIC_LIB}" != "1" ]] && return 0
+
+    if [[ "${GENERATE_STATIC_LIB}" == "1" ]]; then
+        mkdir -p "${STATIC_LIB_DIR}"
+        read -r -d '' WORKSPACE_INCLUDES << EOF
+${WORKSPACE_INCLUDES}
+include "projects/${STATIC_LIB_NAME}"
+EOF
+    fi
+
+    DIALECT="cppdialect \"C++17\""
+    [[ "${PROJECT_LANGUAGE}" == "${LANG_C}" ]] && DIALECT="cdialect \"C11\""
+
+
+    ##
+    ## Generating BUILD file for the static lib project
+    cat >> "${STATIC_LIB_DIR}/premake5.lua" <<EOF
+project "${STATIC_LIB_NAME}"
+    kind "StaticLib"
+    language "${PROJECT_LANGUAGE}"
+    ${DIALECT}
+    staticruntime "on"
+
+    targetdir("../../build/bin/" .. outputdir .. "/%{prj.name}")
+    objdir("../../build/obj/" .. outputdir .. "/%{prj.name}")
+
+    files {
+        "src/**.cxx",
+        "src/**.cpp",
+        "src/**.cc",
+        "src/**.c"
+    }
+
+    includedirs {
+        "include/",
+        "src/"
+    }
+
+    -- Precompiled headers
+    pchheader "pch.h"
+
+
+    --
+    -- Compiler Specific Configuration
+    --
+
+    -- Release Definitions
+    filter "configurations:Debug"
+        runtime "Debug"
+        defines { "DEBUG" }
+        symbols "On"
+        warnings "Extra"
+
+    filter "configurations:Release"
+        runtime "Release"
+        defines { "RELEASE" }
+        optimize "On"
+        warnings "Extra"
+
+
+    -- Linux Build
+    filter "system:linux"
+        defines { "PLATFORM_LINUX" }
+        toolset "clang"
+
+    -- Windows Build
+    filter "system:windows"
+        defines { "PLATFORM_WINDOWS" }
+EOF
+
+
+    ##
+    ## Generating Lib Header
+    mkdir "${STATIC_LIB_DIR}/include/"
+    cat >> "${STATIC_LIB_DIR}/include/${STATIC_LIB_NAME}.h" <<EOF
+#pragma once
+#include "pch.h"
+
+void ${STATIC_LIB_NAME}_Hello();
+EOF
+
+    ##
+    ## Generating Precompiled Headers
+    cat >> "${STATIC_LIB_DIR}/include/pch.h" <<EOF
+#pragma once
+
+#include <stdio.h>
+#include <stdlib.h>
+EOF
+
+    ##
+    ## Generating Static Lib MAIN source
+    mkdir "${STATIC_LIB_DIR}/src/"
+    cat >> "${STATIC_LIB_DIR}/src/${STATIC_LIB_NAME}.${EXT}" <<EOF
+#include "${STATIC_LIB_NAME}.h"
+
+void ${STATIC_LIB_NAME}_Hello()
+{
+    printf("Hello from ${STATIC_LIB_NAME}!\n");
+}
+EOF
+}
+
+
+##
+## SHARED LIBRARY SOURCE & BUILD FILES
+Generate_Shared_Library() {
+    [[ "${GENERATE_SHARED_LIB}" != "1" ]] && return 0
+
+    if [[ "${GENERATE_SHARED_LIB}" == "1" ]]; then
+        mkdir -p "${SHARED_LIB_DIR}"
+        read -r -d '' WORKSPACE_INCLUDES << EOF
+${WORKSPACE_INCLUDES}
+include "projects/${SHARED_LIB_NAME}"
+EOF
+    fi
+
+    DIALECT="cppdialect \"C++17\""
+    [[ "${PROJECT_LANGUAGE}" == "${LANG_C}" ]] && DIALECT="cdialect \"C11\""
+
+
+    ##
+    ## Generating BUILD file for the shared lib project
+    cat >> "${SHARED_LIB_DIR}/premake5.lua" <<EOF
+project "${SHARED_LIB_NAME}"
+    kind "SharedLib"
+    language "${PROJECT_LANGUAGE}"
+    ${DIALECT}
+
+    targetdir("../../build/bin/" .. outputdir .. "/%{prj.name}")
+    objdir("../../build/obj/" .. outputdir .. "/%{prj.name}")
+
+    files {
+        "src/**.cxx",
+        "src/**.cpp",
+        "src/**.cc",
+        "src/**.c"
+    }
+
+    includedirs {
+        "include/",
+        "src/"
+    }
+
+    -- Precompiled headers
+    pchheader "pch.h"
+
+
+    --
+    -- Compiler Specific Configuration
+    --
+
+    -- Release Definitions
+    filter "configurations:Debug"
+        runtime "Debug"
+        defines { "DEBUG" }
+        symbols "On"
+        warnings "Extra"
+
+    filter "configurations:Release"
+        runtime "Release"
+        defines { "RELEASE" }
+        optimize "On"
+        warnings "Extra"
+
+
+    -- Linux Build
+    filter "system:linux"
+        defines { "PLATFORM_LINUX" }
+        toolset "clang"
+
+    -- Windows Build
+    filter "system:windows"
+        defines { "PLATFORM_WINDOWS" }
+EOF
+
+
+    ##
+    ## Generating Lib Header
+    mkdir "${SHARED_LIB_DIR}/include/"
+    cat >> "${SHARED_LIB_DIR}/include/${SHARED_LIB_NAME}.h" <<EOF
+#pragma once
+#include "pch.h"
+
+void ${SHARED_LIB_NAME}_Hello();
+EOF
+
+    ##
+    ## Generating Precompiled Headers
+    cat >> "${SHARED_LIB_DIR}/include/pch.h" <<EOF
+#pragma once
+
+#include <stdio.h>
+#include <stdlib.h>
+EOF
+
+    ##
+    ## Generating Static Lib MAIN source
+    mkdir "${SHARED_LIB_DIR}/src/"
+    cat >> "${SHARED_LIB_DIR}/src/${SHARED_LIB_NAME}.${EXT}" <<EOF
+#include "${SHARED_LIB_NAME}.h"
+
+void ${SHARED_LIB_NAME}_Hello()
+{
+    printf("Hello from ${SHARED_LIB_NAME}!\n");
+}
+EOF
+}
+
+
+##
+## APPLY THE SELECTED TEMPLATE TO THE MAIN PROJECT
+Generate_Choosen_Template() {
+    [[ "${PROJECT_TEMPLATE}" == "none" ]] && return 0
+
+    ##
+    ## TODO: generate tempaltes for the main source
+    ##
+}
+
+
+
+
+
+##=================================================
+## RUNNING & DEBUG
+##=================================================
+
+main "$@" #; exit 0
+tree -CL 4 "./${PROJECT_NAME}"

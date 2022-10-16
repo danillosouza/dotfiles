@@ -50,7 +50,7 @@ beautiful.notification_font = "Noto Sans Regular 14"
 terminal = "alacritty"
 browser = "firefox"
 filemanager = "nemo"
-editor = "emacsclient -c"
+editor = "emacsclient -c --eval '(load-file \"~/.emacs.d/init.el\")'"
 gui_editor="vscodium"
 -- Default modkey.
 -- Usually, Mod4 is the key with a logo between Control and Alt.

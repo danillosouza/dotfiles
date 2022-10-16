@@ -43,7 +43,7 @@ export DEVKITARM="$DEVKITPRO/devkitARM"
 export DEVKITPPC="$DEVKITPRO/devkitPPC"
 
 # dotnet
-export DOTNET_ROOT="/home/azrl/.dotnet"
+export DOTNET_ROOT="$HOME/.dotnet"
 export PATH="$PATH:$DOTNET_ROOT"
 
 # go lang
@@ -72,9 +72,6 @@ fi
 # composer globals
 export PATH="$HOME/.config/composer/vendor/bin:$PATH"
 
-# doom emacs
-export PATH="$HOME/.emacs.d/bin:$PATH"
-
 # discord
 export PATH="$HOME/.Discord:$PATH"
 
@@ -92,10 +89,11 @@ alias ll='ls -lah --color=auto --group-directories-first'
 # NVIM > VIM
 alias vim="nvim"
 
-# alias php='php7'
-alias emacs="emacsclient -c"
+# Emacs utils
+alias emacs="emacsclient -c --eval '(load-file \"~/.emacs.d/init.el\")'"
 alias emacs-start="$HOME/.local/bin/emacs --daemon"
-alias emacs-reset="killall emacs && $HOME/.local/bin/emacs --daemon"
+alias emacs-kill="killall emacs"
+alias emacs-reset="emacs-kill && emacs-start"
 
 alias screensh="scrot -s ~/media/images/screenshots/%Y%m%d_%H%I%M.png" # default screenshot by selection
 alias screensh-f="scrot ~/media/images/screenshots/%Y%m%d_%H%I%M.png"  # full screenshot

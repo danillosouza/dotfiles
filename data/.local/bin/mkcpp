@@ -56,8 +56,16 @@ if [[ ! -z $PROJECT ]]; then
     if [[ "${RECIPE}" == "opengl" || "${RECIPE}" == "gl" ]]; then
         echo "${CYAN}Cooking OpenGL+ImGui recipe...${NC}"
         echo ""
+
+        # switch to opengl branch and prepare it
         git checkout opengl/glfw-imgui --quiet && git_reinit_repo
 
+        # download stb_image
+        mkdir -p vendors/stb/stb
+        curl -LO https://raw.githubusercontent.com/nothings/stb/master/stb_image.h
+        mv stb_image.h vendors/stb/stb/
+
+        # checking imgui docking branch
         cd vendors/imgui/
         git checkout docking --quiet
         cd ../../
@@ -70,6 +78,7 @@ if [[ ! -z $PROJECT ]]; then
     echo "${CYAN}All done! :3${NC}"
     echo ""
 
+    cd ..
     if [[ -z "${RECIPE}" ]]; then
         tree -CL 4 --dirsfirst "${PROJECT}" 
     else
