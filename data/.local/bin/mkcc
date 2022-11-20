@@ -8,7 +8,7 @@ readonly NC='\033[0m'
 
 readonly LANG_C="C"
 readonly LANG_CPP="C++"
-readonly LANG_TEMPLATES=("none" "bearlib" "raylib" "curses")
+readonly LANG_TEMPLATES=("none" "minimal" "bearlib" "raylib" "curses")
 
 ## Defaults
 EXT="cc"
@@ -108,16 +108,22 @@ STATIC_LIB_DIR="${PROJECT_DIRECTORY}/projects/${STATIC_LIB_NAME}"
 SHARED_LIB_DIR="${PROJECT_DIRECTORY}/projects/${SHARED_LIB_NAME}"
 mkdir -p "${MAIN_APP_DIR}"
 
+WORKSPACE_SOURCE_DIR="projects"
 WORKSPACE_INCLUDES="include \"projects/${PROJECT_NAME}\""
 
 ##
 ## Main generator function
 main() {
-    Generate_Main_Project
-    Generate_Static_Library
-    Generate_Shared_Library
-    Generate_Premake_Files
-    Generate_Choosen_Template
+    if [[ "$PROJECT_TEMPLATE" == "minimal" ]]; then
+        WORKSPACE_SOURCE_DIR="src"
+        Generate_Minimal_Project
+    else
+        Generate_Main_Project
+        Generate_Static_Library
+        Generate_Shared_Library
+        Generate_Premake_Files
+        Generate_Choosen_Template
+    fi
 }
 
 
@@ -347,7 +353,7 @@ fi
 ##
 ## Code Formatting
 if [[ "\${ARG}" == "format" ]]; then
-    find projects -regex '.*\.\(cc\|cpp\|h\|hpp\)' -exec clang-format -style=file -i {} \;
+    find ${WORKSPACE_SOURCE_DIR} -regex '.*\.\(cc\|cpp\|h\|hpp\)' -exec clang-format -style=file -i {} \;
     exit 0
 fi
 
@@ -753,13 +759,43 @@ EOF
 
     ##
     ## Generating Lib Header
-    mkdir "${SHARED_LIB_DIR}/include/"
+    mkdir "${SHARED_LIB_DIR}/include"
     cat >> "${SHARED_LIB_DIR}/include/${SHARED_LIB_NAME}.h" <<EOF
 #pragma once
 #include "pch.h"
+#include "${SHARED_LIB_NAME}/Core.h"
 
-void ${SHARED_LIB_NAME}_Hello();
+EXPORT_API void ${SHARED_LIB_NAME}_Hello();
 EOF
+
+
+    ##
+    ## Generating Lib Macros
+    mkdir "${SHARED_LIB_DIR}/include/${SHARED_LIB_NAME}"
+    cat >> "${SHARED_LIB_DIR}/include/${SHARED_LIB_NAME}/Core.h" <<EOF
+#pragma once
+
+// Export Shared Library Symbols
+#if defined(PLATFORM_LINUX)
+    // GCC libexport
+    #define EXPORT_API __attribute__((visibility("default")))
+#elif defined(PLATFORM_WINDOWS)
+    #if defined(__GNUC__)
+        #define EXPORT_API __attribute__((visibility("default")))
+    #else
+        #ifdef BUILD_DLL
+            #define EXPORT_API __declspec(dllexport)
+        #else
+            #define EXPORT_API __declspec(dllimport)
+        #endif
+    #endif
+#else
+    // do nothing and hope for the best?
+    #define EXPORT_API
+    #pragma warning Unknown dynamic link import/export semantics.
+#endif
+EOF
+
 
     ##
     ## Generating Precompiled Headers
@@ -776,7 +812,7 @@ EOF
     cat >> "${SHARED_LIB_DIR}/src/${SHARED_LIB_NAME}.${EXT}" <<EOF
 #include "${SHARED_LIB_NAME}.h"
 
-void ${SHARED_LIB_NAME}_Hello()
+EXPORT_API void ${SHARED_LIB_NAME}_Hello()
 {
     printf("Hello from ${SHARED_LIB_NAME}!\n");
 }
@@ -796,6 +832,111 @@ Generate_Choosen_Template() {
 
 
 
+
+##=================================================
+## MINIMAL PROJECT - SINGLE BINARY
+##=================================================
+
+
+Generate_Minimal_Project() {
+    Generate_Premake_Files
+    rm -Rf "${PROJECT_DIRECTORY}/projects"
+
+
+    DIALECT="cppdialect \"C++17\""
+    [[ "${PROJECT_LANGUAGE}" == "${LANG_C}" ]] && DIALECT="cdialect \"C11\""
+
+    PROJECT_DIR_INCLUDES="\"src/\""
+    PROJECT_LIB_INCLUDES="#include <stdio.h>"
+
+
+    ##
+    ## Generating BUILD file for the main project
+    rm -f "${PROJECT_DIRECTORY}/premake5.lua"
+    cat >> "${PROJECT_DIRECTORY}/premake5.lua" <<EOF
+--
+-- Generate compile_commands.json for LSP on Emacs
+include("premake5-ccjson")
+
+-- Workspace Definition
+workspace "${PROJECT_NAME}Workspace"
+    location "build"
+    configurations { "Debug", "Release" }
+
+    -- defaults to x86_64
+    architecture "x86_64"
+
+    -- main project and build dir template
+    startproject "${PROJECT_NAME}"
+    outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
+
+
+-- Projects
+project "${PROJECT_NAME}"
+    kind "ConsoleApp"
+    language "${PROJECT_LANGUAGE}"
+    ${DIALECT}
+
+    targetdir("build/bin/" .. outputdir .. "/%{prj.name}")
+    objdir("build/obj/" .. outputdir .. "/%{prj.name}")
+
+    files {
+        "src/**.cxx",
+        "src/**.cpp",
+        "src/**.cc",
+        "src/**.c"
+    }
+
+    includedirs {
+        ${PROJECT_DIR_INCLUDES}
+    }
+
+    -- Links to external/project libraries
+    links {  }
+
+
+    --
+    -- Compiler Specific Configuration
+    --
+
+    -- Release Definitions
+    filter "configurations:Debug"
+        runtime "Debug"
+        defines { "DEBUG" }
+        symbols "On"
+        warnings "Extra"
+        
+    filter "configurations:Release"
+        runtime "Release"
+        defines { "RELEASE" }
+        optimize "On"
+        warnings "Extra"
+
+
+    -- Linux Build
+    filter "system:linux"
+        defines { "PLATFORM_LINUX" }
+        toolset "clang"
+
+    -- Windows Build
+    filter "system:windows"
+        defines { "PLATFORM_WINDOWS" }
+EOF
+
+
+    ##
+    ## Generating MAIN source file
+    mkdir "${PROJECT_DIRECTORY}/src"
+    cat >> "${PROJECT_DIRECTORY}/src/${PROJECT_NAME}.${EXT}" <<EOF
+${PROJECT_LIB_INCLUDES}
+
+int main()
+{
+    printf("Hello World!\n");
+    return 0;
+}
+EOF
+}
 
 
 ##=================================================

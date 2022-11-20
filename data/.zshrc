@@ -62,13 +62,6 @@ source $HOME/.cargo/env
 # npm globals
 export PATH="$HOME/.npm-global/bin:$PATH"
 
-# phpenv
-export PHPENV_ROOT="/home/azrl/.phpenv"
-if [ -d "${PHPENV_ROOT}" ]; then
-    export PATH="${PHPENV_ROOT}/bin:${PATH}"
-    eval "$(phpenv init -)"
-fi
-
 # composer globals
 export PATH="$HOME/.config/composer/vendor/bin:$PATH"
 
