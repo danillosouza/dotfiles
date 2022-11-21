@@ -8,7 +8,7 @@ readonly NC='\033[0m'
 
 readonly LANG_C="C"
 readonly LANG_CPP="C++"
-readonly LANG_TEMPLATES=("none" "minimal" "bearlib" "raylib" "curses")
+readonly LANG_TEMPLATES=("none" "make" "minimal" "bearlib" "raylib" "curses")
 
 ## Defaults
 EXT="cc"
@@ -114,7 +114,10 @@ WORKSPACE_INCLUDES="include \"projects/${PROJECT_NAME}\""
 ##
 ## Main generator function
 main() {
-    if [[ "$PROJECT_TEMPLATE" == "minimal" ]]; then
+    if [[ "$PROJECT_TEMPLATE" == "make" ]]; then
+        WORKSPACE_SOURCE_DIR="src"
+        Generate_Minimal_Make_Project
+    elif [[ "$PROJECT_TEMPLATE" == "minimal" ]]; then
         WORKSPACE_SOURCE_DIR="src"
         Generate_Minimal_Project
     else
@@ -933,6 +936,108 @@ ${PROJECT_LIB_INCLUDES}
 int main()
 {
     printf("Hello World!\n");
+    return 0;
+}
+EOF
+}
+
+
+##=================================================
+## MINIMAL MAKE PROJECT - SINGLE BINARY
+##=================================================
+
+
+Generate_Minimal_Make_Project() {
+    DIALECT="c++17"
+	COMPILER="g++"
+
+    PROJECT_DIR_INCLUDES="\"src/\""
+	PROJECT_LIB_INCLUDES="#include <iostream>"
+	PROJECT_LIB_CALLS="std::cout << \"Hello World!\" << std::endl;"
+
+    if [[ "${PROJECT_LANGUAGE}" == "${LANG_C}" ]]; then
+		DIALECT="c11"
+		COMPILER="gcc"
+    	
+		PROJECT_LIB_INCLUDES="#include <stdio.h>"
+		PROJECT_LIB_CALLS="printf(\"Hello World!\\n\");"
+	fi
+
+	rm -Rf "${PROJECT_DIRECTORY}/projects"
+
+    ##
+    ## Generating BUILD file for the main project
+    cat >> "${PROJECT_DIRECTORY}/Makefile" <<EOF
+
+##
+## Project Configuration
+APPLICATION = ${PROJECT_NAME}
+VERSION     = 1.0
+
+CC      = ${COMPILER}
+EXT     = ${EXT}
+CFLAGS  = --std=${DIALECT} -Wall -Wextra
+LDFLAGS = 
+
+
+DIST_DIR    = dist/\$(APPLICATION)-\$(VERSION)
+BUILD_DIR   = build
+SOURCES_DIR = src
+HEADERS_DIR = src
+
+BINARY   = \$(DIST_DIR)/\$(APPLICATION)
+SOURCES := \$(shell find \$(SOURCES_DIR) -name '*.\$(EXT)')
+OBJECTS := \$(addprefix \$(BUILD_DIR)/, \$(SOURCES:%.\$(EXT)=%.o))
+
+
+.PHONY: clear run
+.SECONDARY: main-build
+
+
+all: post-build
+
+pre-build:
+	@echo Generating build structure...
+	@mkdir -p \$(DIST_DIR)
+	@find \$(SOURCES_DIR) -type d -exec mkdir -p -- \$(BUILD_DIR)/{} \;
+
+post-build: main-build
+	@echo Generating compilation database...
+	@bear -- make --print-directory -n
+
+main-build: pre-build
+	@echo Building Project...
+	@\$(MAKE) --no-print-directory target
+
+target: \$(OBJECTS)
+	\$(CC) \$(CFLAGS) \$(LDFLAGS) \$(OBJECTS) -o \$(BINARY)
+
+\$(BUILD_DIR)/%.o: %.\$(EXT)
+	\$(CC) \$(CFLAGS) \$(LDFLAGS) -I\$(HEADERS_DIR) -I\$(dir \$<) -c \$< -o \$@
+
+
+## ------------------------
+## Utils
+## ------------------------
+
+clear:
+	@rm -Rf dist *.json \$(BUILD_DIR)
+
+run:
+	@chmod +x \$(BINARY) && exec \$(BINARY)
+
+EOF
+
+
+    ##
+    ## Generating MAIN source file
+    mkdir "${PROJECT_DIRECTORY}/src"
+    cat >> "${PROJECT_DIRECTORY}/src/${PROJECT_NAME}.${EXT}" <<EOF
+${PROJECT_LIB_INCLUDES}
+
+int main()
+{
+    ${PROJECT_LIB_CALLS}
     return 0;
 }
 EOF
